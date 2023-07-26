@@ -13,12 +13,13 @@ type InputMap struct {
 }
 
 type Player struct {
-	texture  rl.Texture2D
-	speed    float32
-	origin   rl.Vector2
-	srcRect  rl.Rectangle
-	destRect rl.Rectangle
-	keyMap   InputMap
+	texture     rl.Texture2D
+	speed       float32
+	origin      rl.Vector2
+	srcRect     rl.Rectangle
+	destRect    rl.Rectangle
+	keyMap      InputMap
+	projectiles []*Projectile
 }
 
 func (p *Player) Setup() {
@@ -40,11 +41,17 @@ func (p *Player) Setup() {
 
 func (p *Player) Draw() {
 	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, rl.White)
+	for _, proj := range p.projectiles {
+		proj.Draw()
+	}
 }
 
 func (p *Player) Update() {
 	p.handlePlayerInput()
 	p.clampPlayerBounds()
+	for _, proj := range p.projectiles {
+		proj.Update()
+	}
 }
 
 func (p *Player) handlePlayerInput() {
@@ -93,5 +100,9 @@ func (p *Player) clampPlayerBounds() {
 }
 
 func (p *Player) fire() {
-	println("Firin mah laser")
+	proj := &Projectile{}
+	proj.Setup()
+	proj.destRect.X = p.destRect.X
+	proj.destRect.Y = p.destRect.Y
+	p.projectiles = append(p.projectiles, proj)
 }
