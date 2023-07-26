@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	WINDOW_WIDTH  = 1920
-	WINDOW_HEIGHT = 1080
+	WINDOW_WIDTH  = 1280
+	WINDOW_HEIGHT = 720
 	TARGET_FPS    = 60
 )
 
@@ -15,11 +15,24 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(TARGET_FPS)
 
+	bg := rl.LoadTexture("assets/background.jpg")
+	bg_width := bg.Width
+	bg_height := bg.Height
+
+	bg_src_rec := rl.Rectangle{X: 0.0, Y: 0.0, Width: float32(bg_width), Height: float32(bg_height)}
+	bg_dest_rec := rl.Rectangle{X: 0.0, Y: 0.0, Width: WINDOW_WIDTH, Height: WINDOW_HEIGHT}
+	bg_origin := rl.Vector2{X: 0.0, Y: 0.0}
+
+	rl.SetTextureWrap(bg, rl.RL_TEXTURE_WRAP_REPEAT)
+
 	for !rl.WindowShouldClose() {
+		bg_src_rec.Y -= 1
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.RayWhite)
-		rl.DrawText("Just the beginning!", 190, 200, 20, rl.LightGray)
+
+		// Draw Background
+		rl.DrawTexturePro(bg, bg_src_rec, bg_dest_rec, bg_origin, 0, rl.White)
 
 		rl.EndDrawing()
 	}

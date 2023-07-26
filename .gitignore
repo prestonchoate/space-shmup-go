@@ -17,6 +17,9 @@
 !README.md
 !LICENSE
 
+!assets/*
+!assets/**
+
 # !Makefile
 
 # ...even if they are in subdirectories
