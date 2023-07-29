@@ -2,6 +2,7 @@ package main
 
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
+	entities "github.com/prestonchoate/space-shmup/Entities"
 )
 
 const (
@@ -15,7 +16,7 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(TARGET_FPS)
 
-	gm := GameManager{}
+	gm := entities.GameManager{}
 	gm.GameSetup()
 
 	for !rl.WindowShouldClose() {

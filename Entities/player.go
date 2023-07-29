@@ -1,4 +1,4 @@
-package main
+package entities
 
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -30,7 +30,7 @@ func (p *Player) Setup() {
 	p.destRect.Width = float32(p.texture.Width)
 	p.destRect.Height = float32(p.texture.Height)
 	p.destRect.X = float32(p.texture.Width)
-	p.destRect.Y = float32(WINDOW_HEIGHT - p.texture.Width)
+	p.destRect.Y = float32(int32(rl.GetScreenHeight()) - p.texture.Width)
 
 	p.keyMap.keyLeft = rl.KeyLeft
 	p.keyMap.keyRight = rl.KeyRight
@@ -78,9 +78,9 @@ func (p *Player) handlePlayerInput() {
 
 func (p *Player) clampPlayerBounds() {
 	minWidth := float32(0.0)
-	maxWidth := float32(WINDOW_WIDTH - p.texture.Width)
+	maxWidth := float32(int32(rl.GetScreenWidth()) - p.texture.Width)
 	minHeight := float32(0.0)
-	maxHeight := float32(WINDOW_HEIGHT - p.texture.Height)
+	maxHeight := float32(int32(rl.GetScreenHeight()) - p.texture.Height)
 
 	if p.destRect.X < minWidth {
 		p.destRect.X = minWidth

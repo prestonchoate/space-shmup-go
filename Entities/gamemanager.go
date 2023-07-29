@@ -1,4 +1,4 @@
-package main
+package entities
 
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -10,7 +10,10 @@ type GameEntity interface {
 }
 
 type GameManager struct {
-	entities []GameEntity
+	entities     []GameEntity
+	windowHeight int
+	windowWidth  int
+	fps          int32
 }
 
 func (gm *GameManager) UpdateEntities() {
@@ -32,6 +35,10 @@ func (gm *GameManager) DrawEntities() {
 }
 
 func (gm *GameManager) GameSetup() {
+	gm.windowHeight = rl.GetScreenHeight()
+	gm.windowWidth = rl.GetScreenWidth()
+	gm.fps = rl.GetFPS()
+
 	gm.entities = []GameEntity{}
 
 	bg := &Background{}
