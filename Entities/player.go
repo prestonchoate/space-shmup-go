@@ -14,15 +14,14 @@ type InputMap struct {
 }
 
 type Player struct {
-	id          uuid.UUID
-	texture     rl.Texture2D
-	speed       float32
-	origin      rl.Vector2
-	srcRect     rl.Rectangle
-	destRect    rl.Rectangle
-	keyMap      InputMap
-	projectiles []*Projectile
-	projPool    ObjectPool[*Projectile]
+	id       uuid.UUID
+	texture  rl.Texture2D
+	speed    float32
+	origin   rl.Vector2
+	srcRect  rl.Rectangle
+	destRect rl.Rectangle
+	keyMap   InputMap
+	projPool ObjectPool[*Projectile]
 }
 
 func (p *Player) Draw() {
@@ -37,6 +36,9 @@ func (p *Player) Update() {
 	p.clampPlayerBounds()
 	for _, proj := range p.projPool.activePool {
 		proj.Update()
+		if proj.destRect.Y <= -(proj.destRect.Height) {
+			p.projPool.Return(proj)
+		}
 	}
 }
 
