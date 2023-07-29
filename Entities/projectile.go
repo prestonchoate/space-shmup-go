@@ -2,9 +2,11 @@ package entities
 
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
+	"github.com/google/uuid"
 )
 
 type Projectile struct {
+	id           uuid.UUID
 	texture      rl.Texture2D
 	speed        float32
 	srcRect      rl.Rectangle
@@ -18,6 +20,7 @@ type Projectile struct {
 }
 
 func (p *Projectile) Setup() {
+	p.id = uuid.New()
 	p.texture = rl.LoadTexture("assets/projectile/rocket.png")
 	p.speed = 7.5
 	p.frameCount = 3
@@ -44,4 +47,8 @@ func (p *Projectile) Update() {
 		p.frameLimiter = 0
 		p.srcRect.X += float32(p.frameSize)
 	}
+}
+
+func (p *Projectile) GetID() uuid.UUID {
+	return p.id
 }

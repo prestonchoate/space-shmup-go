@@ -1,20 +1,16 @@
 package entities
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	rl "github.com/gen2brain/raylib-go/raylib"
+	"github.com/google/uuid"
+)
 
 type Background struct {
+	id       uuid.UUID
 	texture  rl.Texture2D
 	srcRect  rl.Rectangle
 	destRect rl.Rectangle
 	origin   rl.Vector2
-}
-
-func (bg *Background) Setup() {
-	bg.srcRect.Width = float32(bg.texture.Width)
-	bg.srcRect.Height = float32(bg.texture.Height)
-	bg.destRect = rl.Rectangle{X: 0.0, Y: 0.0, Width: float32(rl.GetScreenWidth()), Height: float32(rl.GetScreenHeight())}
-
-	rl.SetTextureWrap(bg.texture, rl.RL_TEXTURE_WRAP_REPEAT)
 }
 
 func (bg *Background) Draw() {
@@ -23,4 +19,8 @@ func (bg *Background) Draw() {
 
 func (bg *Background) Update() {
 	bg.srcRect.Y -= 1
+}
+
+func (bg *Background) GetID() uuid.UUID {
+	return bg.id
 }
