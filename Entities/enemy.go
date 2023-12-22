@@ -17,6 +17,7 @@ type Enemy struct {
 
 func (e *Enemy) Draw() {
 	rl.DrawTexturePro(e.texture, e.srcRect, e.destRect, e.origin, 0, rl.White)
+	rl.DrawRectangleLines(int32(e.destRect.X), int32(e.destRect.Y), int32(e.destRect.Width), int32(e.destRect.Height), rl.Red)
 }
 
 func (e *Enemy) Update() {

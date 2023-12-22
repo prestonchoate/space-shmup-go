@@ -1,8 +1,6 @@
 package entities
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 )
 
@@ -18,7 +16,6 @@ func (op *ObjectPool[T]) Get() T {
 	if len(op.inactivePool) == 0 {
 		obj := op.createFn().(T)
 		op.activePool[obj.GetID()] = obj
-		fmt.Println("Created new object id: ", obj.GetID())
 		return obj
 	}
 

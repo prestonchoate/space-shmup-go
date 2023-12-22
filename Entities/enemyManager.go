@@ -29,7 +29,7 @@ func (em *EnemyManager) Update() {
 			e.texture = em.enemyTextures[randIndex]
 			e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
 			startX := rand.Intn(rl.GetScreenWidth())
-			startY := rand.Intn(300) * -1
+			startY := rl.GetRandomValue(-3000, -100)
 			e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width), float32(e.texture.Height))
 		}
 		e.Update()
@@ -51,6 +51,11 @@ func (em *EnemyManager) GetID() uuid.UUID {
 	return em.id
 }
 
+func (em *EnemyManager) DestroyEnemy(e *Enemy) {
+	e.destRect.Y = float32(rl.GetRandomValue(-3000, -100))
+	em.enemies.Return(e)
+}
+
 func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
 	em := &EnemyManager{
 		id:            uuid.UUID{},
@@ -58,7 +63,7 @@ func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
 		enemyCount:    10,
 		enemies: ObjectPool[*Enemy]{
 			activePool:   make(map[uuid.UUID]*Enemy),
-			inactivePool: make([]*Enemy, 0, 2000),
+			inactivePool: make([]*Enemy, 0, 20000),
 			createFn:     createEnemy,
 		},
 	}

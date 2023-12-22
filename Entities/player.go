@@ -1,6 +1,8 @@
 package entities
 
 import (
+	"fmt"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
 )
@@ -24,10 +26,38 @@ type Player struct {
 	projPool ObjectPool[*Projectile]
 }
 
+func CreatePlayer(tex *rl.Texture2D) *Player {
+	return &Player{
+		id:      uuid.New(),
+		texture: *(tex),
+		speed:   2.5,
+		origin:  rl.Vector2{X: 0.0, Y: 0.0},
+		srcRect: rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
+		destRect: rl.NewRectangle(float32(tex.Width),
+			float32(rl.GetScreenHeight()-int(tex.Height)),
+			float32(tex.Width),
+			float32(tex.Height)),
+		keyMap: InputMap{
+			keyLeft:  rl.KeyLeft,
+			keyUp:    rl.KeyUp,
+			keyRight: rl.KeyRight,
+			keyDown:  rl.KeyDown,
+			keyFire:  rl.KeySpace,
+		},
+		projPool: ObjectPool[*Projectile]{
+			activePool:   make(map[uuid.UUID]*Projectile),
+			inactivePool: make([]*Projectile, 0, 200),
+			createFn:     createProjectile,
+		},
+	}
+}
+
 func (p *Player) Draw() {
 	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, rl.White)
+	rl.DrawRectangleLines(int32(p.destRect.X), int32(p.destRect.Y), int32(p.destRect.Width), int32(p.destRect.Height), rl.Green)
 	for _, proj := range p.projPool.activePool {
 		proj.Draw()
+		rl.DrawRectangleLines(int32(proj.destRect.X), int32(proj.destRect.Y), int32(proj.destRect.Width), int32(proj.destRect.Height), rl.Blue)
 	}
 }
 
@@ -95,4 +125,31 @@ func (p *Player) fire() {
 	proj := p.projPool.Get()
 	proj.destRect.X = p.destRect.X + (float32(p.texture.Width) / 3.75)
 	proj.destRect.Y = p.destRect.Y
+}
+
+func (p *Player) Destroy() {
+	fmt.Println("Destroying player")
+}
+
+func (p *Player) DestroyProjectile(proj *Projectile) {
+	p.projPool.Return(proj)
+}
+
+func createProjectile() GameEntity {
+	frameCount := 3
+	frameSize := int(ProjectileTexture.Width) / 3
+	scale := 3.0
+	speed := 7.5
+
+	return &Projectile{
+		id:         uuid.New(),
+		texture:    ProjectileTexture,
+		speed:      float32(speed),
+		frameCount: frameCount,
+		frameSize:  frameSize,
+		scale:      float32(scale),
+		srcRect:    rl.NewRectangle(0.0, 0.0, float32(frameSize), float32(ProjectileTexture.Height)),
+		destRect:   rl.NewRectangle(0.0, 0.0, float32(frameSize)*float32(scale), float32(ProjectileTexture.Height)*float32(scale)),
+		framespeed: 8,
+	}
 }
