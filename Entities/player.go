@@ -93,6 +93,6 @@ func (p *Player) clampPlayerBounds() {
 
 func (p *Player) fire() {
 	proj := p.projPool.Get()
-	proj.destRect.X = p.destRect.X
+	proj.destRect.X = p.destRect.X + (float32(p.texture.Width) / 3.75)
 	proj.destRect.Y = p.destRect.Y
 }

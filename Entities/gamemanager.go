@@ -8,6 +8,7 @@ import (
 var PlayerTexture rl.Texture2D
 var BackgroundTexture rl.Texture2D
 var ProjectileTexture rl.Texture2D
+var EnemyTextures []rl.Texture2D
 
 type GameEntity interface {
 	Draw()
@@ -76,6 +77,11 @@ func (gm *GameManager) GameSetup() {
 		},
 	}
 	gm.entities = append(gm.entities, player)
+
+	em := CreateEnemyManager(EnemyTextures)
+	gm.entities = append(gm.entities, em)
+
+	em.SpawnNewEnemies(1)
 }
 
 func loadAssets() {
@@ -83,6 +89,7 @@ func loadAssets() {
 	BackgroundTexture = rl.LoadTexture("assets/background.jpg")
 	ProjectileTexture = rl.LoadTexture("assets/projectile/rocket.png")
 
+	EnemyTextures = append(EnemyTextures, rl.LoadTexture("assets/enemies/Emissary.png"))
 	rl.SetTextureWrap(BackgroundTexture, rl.RL_TEXTURE_WRAP_REPEAT)
 	rl.SetTextureWrap(ProjectileTexture, rl.RL_TEXTURE_WRAP_REPEAT)
 }
