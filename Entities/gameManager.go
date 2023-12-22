@@ -72,6 +72,9 @@ func (gm *GameManager) GameSetup() {
 
 	cm := CreateCollisionManager(player, em)
 	gm.entities = append(gm.entities, cm)
+
+	ui := CreateUIManager(player, em)
+	gm.entities = append(gm.entities, ui)
 }
 
 func loadAssets() {

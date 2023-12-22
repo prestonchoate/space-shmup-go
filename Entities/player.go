@@ -1,8 +1,6 @@
 package entities
 
 import (
-	"fmt"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
 )
@@ -24,6 +22,8 @@ type Player struct {
 	destRect rl.Rectangle
 	keyMap   InputMap
 	projPool ObjectPool[*Projectile]
+	health   int
+	score    int
 }
 
 func CreatePlayer(tex *rl.Texture2D) *Player {
@@ -38,10 +38,10 @@ func CreatePlayer(tex *rl.Texture2D) *Player {
 			float32(tex.Width),
 			float32(tex.Height)),
 		keyMap: InputMap{
-			keyLeft:  rl.KeyLeft,
-			keyUp:    rl.KeyUp,
-			keyRight: rl.KeyRight,
-			keyDown:  rl.KeyDown,
+			keyLeft:  rl.KeyA,
+			keyUp:    rl.KeyW,
+			keyRight: rl.KeyD,
+			keyDown:  rl.KeyS,
 			keyFire:  rl.KeySpace,
 		},
 		projPool: ObjectPool[*Projectile]{
@@ -49,10 +49,15 @@ func CreatePlayer(tex *rl.Texture2D) *Player {
 			inactivePool: make([]*Projectile, 0, 200),
 			createFn:     createProjectile,
 		},
+		health: 100,
 	}
 }
 
 func (p *Player) Draw() {
+	if p.health <= 0 {
+		return
+	}
+
 	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, rl.White)
 	rl.DrawRectangleLines(int32(p.destRect.X), int32(p.destRect.Y), int32(p.destRect.Width), int32(p.destRect.Height), rl.Green)
 	for _, proj := range p.projPool.activePool {
@@ -62,6 +67,11 @@ func (p *Player) Draw() {
 }
 
 func (p *Player) Update() {
+	if p.health <= 0 {
+		//TODO: Add game over screen
+		return
+	}
+
 	p.handlePlayerInput()
 	p.clampPlayerBounds()
 	for _, proj := range p.projPool.activePool {
@@ -127,12 +137,16 @@ func (p *Player) fire() {
 	proj.destRect.Y = p.destRect.Y
 }
 
-func (p *Player) Destroy() {
-	fmt.Println("Destroying player")
+func (p *Player) Damage(dmg int) {
+	p.health -= dmg
+	if p.health <= 0 {
+		p.health = 0
+	}
 }
 
 func (p *Player) DestroyProjectile(proj *Projectile) {
 	p.projPool.Return(proj)
+	p.score += 10
 }
 
 func createProjectile() GameEntity {

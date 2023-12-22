@@ -34,7 +34,7 @@ func (c *CollisionManager) checkPlayerCollision() {
 	for _, e := range c.enemyManager.enemies.activePool {
 		if checkCollisionRecs(c.player.destRect, e.destRect) {
 			c.enemyManager.DestroyEnemy(e)
-			c.player.Destroy()
+			c.player.Damage(10)
 		}
 	}
 }
