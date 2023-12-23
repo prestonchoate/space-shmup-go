@@ -53,6 +53,9 @@ func (em *EnemyManager) GetID() uuid.UUID {
 
 func (em *EnemyManager) DestroyEnemy(e *Enemy) {
 	e.destRect.Y = float32(rl.GetRandomValue(-3000, -100))
+	e.score = int(rl.GetRandomValue(10, 250))
+	e.scoreTick = 120
+	e.speed = float32(rl.GetRandomValue(1.0, 4.0))
 	em.enemies.Return(e)
 }
 
@@ -73,7 +76,10 @@ func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
 
 func createEnemy() GameEntity {
 	return &Enemy{
-		id:    uuid.New(),
-		speed: 2.0,
+		id:        uuid.New(),
+		speed:     float32(rl.GetRandomValue(1.0, 4.0)),
+		score:     int(rl.GetRandomValue(10, 250)),
+		damage:    10,
+		scoreTick: 120,
 	}
 }

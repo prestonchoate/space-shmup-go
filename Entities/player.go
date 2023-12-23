@@ -59,10 +59,8 @@ func (p *Player) Draw() {
 	}
 
 	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, rl.White)
-	rl.DrawRectangleLines(int32(p.destRect.X), int32(p.destRect.Y), int32(p.destRect.Width), int32(p.destRect.Height), rl.Green)
 	for _, proj := range p.projPool.activePool {
 		proj.Draw()
-		rl.DrawRectangleLines(int32(proj.destRect.X), int32(proj.destRect.Y), int32(proj.destRect.Width), int32(proj.destRect.Height), rl.Blue)
 	}
 }
 
@@ -142,6 +140,10 @@ func (p *Player) Damage(dmg int) {
 	if p.health <= 0 {
 		p.health = 0
 	}
+}
+
+func (p *Player) AddScore(score int) {
+	p.score += score
 }
 
 func (p *Player) DestroyProjectile(proj *Projectile) {
