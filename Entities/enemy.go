@@ -17,6 +17,7 @@ type Enemy struct {
 	score     int
 	scoreTick int
 	active    bool
+	prevX     float32
 }
 
 func (e *Enemy) Draw() {
@@ -24,6 +25,7 @@ func (e *Enemy) Draw() {
 }
 
 func (e *Enemy) Update() {
+	e.prevX = e.destRect.X
 	if e.targetX == 0.0 {
 		e.targetX = float32(rl.GetRandomValue(0, int32(rl.GetScreenWidth())))
 	}
@@ -43,8 +45,9 @@ func (e *Enemy) Update() {
 		e.destRect.Y = float32(startY)
 	}
 
-	if e.destRect.X == e.targetX || e.destRect.X == e.targetX+1 || e.destRect.X == e.targetX-1 {
-		e.targetX = float32(rl.GetRandomValue(0, int32(rl.GetScreenWidth())))
+	// if the enemy has reached the target, get a new target
+	if e.destRect.X == e.targetX {
+		e.targetX = float32(rl.GetRandomValue(e.texture.Width, int32(rl.GetScreenWidth())-e.texture.Width))
 	}
 
 	if e.scoreTick > 0 {
@@ -54,6 +57,11 @@ func (e *Enemy) Update() {
 	if e.scoreTick <= 0 {
 		e.score--
 		e.scoreTick = 120
+	}
+
+	if e.prevX == e.destRect.X { // enemy is stuck
+		e.destRect.X += float32(rl.GetRandomValue(-1, 1) * int32(e.speed))
+		e.targetX = float32(rl.GetRandomValue(e.texture.Width, int32(rl.GetScreenWidth())-e.texture.Width))
 	}
 
 }

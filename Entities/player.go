@@ -5,30 +5,34 @@ import (
 	"github.com/google/uuid"
 )
 
+const DEFAULT_DAMAGE_TICKS = 15
+
 type InputMap struct {
-	keyLeft  int32
-	keyRight int32
-	keyUp    int32
-	keyDown  int32
-	keyFire  int32
+	KeyLeft  int32
+	KeyRight int32
+	KeyUp    int32
+	KeyDown  int32
+	KeyFire  int32
 }
 
 type Player struct {
-	id       uuid.UUID
-	texture  rl.Texture2D
-	speed    float32
-	origin   rl.Vector2
-	srcRect  rl.Rectangle
-	destRect rl.Rectangle
-	keyMap   InputMap
-	projPool ObjectPool[*Projectile]
-	projTex  rl.Texture2D
-	health   int
-	score    int
-	active   bool
+	id          uuid.UUID
+	texture     rl.Texture2D
+	speed       float32
+	origin      rl.Vector2
+	srcRect     rl.Rectangle
+	destRect    rl.Rectangle
+	keyMap      InputMap
+	projPool    ObjectPool[*Projectile]
+	projTex     rl.Texture2D
+	health      int
+	score       int
+	active      bool
+	damaged     bool
+	damageTicks int
 }
 
-func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D) *Player {
+func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys InputMap) *Player {
 	return &Player{
 		id:      uuid.New(),
 		texture: *(tex),
@@ -39,21 +43,16 @@ func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D) *Player {
 			float32(rl.GetScreenHeight()-int(tex.Height)),
 			float32(tex.Width),
 			float32(tex.Height)),
-		keyMap: InputMap{
-			keyLeft:  rl.KeyA,
-			keyUp:    rl.KeyW,
-			keyRight: rl.KeyD,
-			keyDown:  rl.KeyS,
-			keyFire:  rl.KeySpace,
-		},
+		keyMap: keys,
 		projPool: ObjectPool[*Projectile]{
 			activePool:   make(map[uuid.UUID]*Projectile),
 			inactivePool: make([]*Projectile, 0, 200),
 			createFn:     createProjectile,
 		},
-		projTex: *projTex,
-		health:  100,
-		active:  true,
+		projTex:     *projTex,
+		health:      100,
+		active:      true,
+		damageTicks: DEFAULT_DAMAGE_TICKS,
 	}
 }
 
@@ -65,8 +64,12 @@ func (p *Player) Draw() {
 	if p.health <= 0 {
 		return
 	}
+	tint := rl.White
+	if p.damaged {
+		tint = rl.Red
+	}
 
-	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, rl.White)
+	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, tint)
 	for _, proj := range p.projPool.activePool {
 		proj.Draw()
 	}
@@ -78,8 +81,17 @@ func (p *Player) Update() {
 	}
 
 	if p.health <= 0 {
-		//TODO: Add game over screen
+		// Move player off screen
+		p.destRect.X = -1000
 		return
+	}
+
+	if p.damaged {
+		p.damageTicks--
+		if p.damageTicks <= 0 {
+			p.damaged = false
+			p.damageTicks = DEFAULT_DAMAGE_TICKS
+		}
 	}
 
 	p.handlePlayerInput()
@@ -97,23 +109,23 @@ func (p *Player) GetID() uuid.UUID {
 }
 
 func (p *Player) handlePlayerInput() {
-	if rl.IsKeyDown(p.keyMap.keyLeft) {
+	if rl.IsKeyDown(p.keyMap.KeyLeft) {
 		p.destRect.X -= p.speed
 	}
 
-	if rl.IsKeyDown(p.keyMap.keyRight) {
+	if rl.IsKeyDown(p.keyMap.KeyRight) {
 		p.destRect.X += p.speed
 	}
 
-	if rl.IsKeyDown(p.keyMap.keyUp) {
+	if rl.IsKeyDown(p.keyMap.KeyUp) {
 		p.destRect.Y -= p.speed
 	}
 
-	if rl.IsKeyDown(p.keyMap.keyDown) {
+	if rl.IsKeyDown(p.keyMap.KeyDown) {
 		p.destRect.Y += p.speed
 	}
 
-	if rl.IsKeyPressed(p.keyMap.keyFire) {
+	if rl.IsKeyPressed(p.keyMap.KeyFire) {
 		p.fire()
 	}
 }
@@ -154,7 +166,10 @@ func (p *Player) fire() {
 }
 
 func (p *Player) TakeDamage(dmg int) {
-	p.health -= dmg
+	if !p.damaged {
+		p.health -= dmg
+		p.damaged = true
+	}
 	if p.health <= 0 {
 		p.health = 0
 	}

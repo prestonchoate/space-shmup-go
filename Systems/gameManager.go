@@ -13,12 +13,21 @@ var EnemyTextures []rl.Texture2D
 type GameState int
 
 const (
-	Loading GameState = iota
+	Start GameState = iota
+	Loading
 	Paused
 	Playing
 	Menu
 	GameOver
 )
+
+type GameSettings struct {
+	targetFPS    int32
+	screenWidth  int
+	screenHeight int
+	fullscreen   bool
+	keys         entities.InputMap
+}
 
 type GameManager struct {
 	entities        []entities.GameEntity
@@ -29,17 +38,12 @@ type GameManager struct {
 	state           GameState
 	uiSystem        *UIManager
 	collisionSystem *CollisionManager
+	assetsLoaded    bool
+	currentSettings GameSettings
 }
 
 func (gm *GameManager) Update() {
-	if rl.IsKeyPressed(rl.KeyEscape) {
-		if gm.state == Paused {
-			gm.state = Playing
-		} else if gm.state == Playing {
-			gm.state = Paused
-		}
-	}
-
+	gm.handleButtonInputs()
 	for _, entity := range gm.entities {
 		entity.Activate(gm.state == Playing)
 		entity.Update()
@@ -49,27 +53,49 @@ func (gm *GameManager) Update() {
 				em.SpawnNewEnemies(gm.level)
 			}
 		}
+		if p, ok := entity.(*entities.Player); ok {
+			if p.GetHealth() <= 0 {
+				gm.state = GameOver
+			}
+		}
 	}
-	gm.collisionSystem.Update()
-	gm.uiSystem.Update()
+	if gm.state == Playing {
+		gm.collisionSystem.Update()
+	}
+
+	gm.uiSystem.Update(gm.state)
 }
 
 func (gm *GameManager) Draw() {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.RayWhite)
-
+	rl.ClearBackground(rl.Black)
 	for _, entity := range gm.entities {
 		entity.Draw()
 	}
-
-	gm.uiSystem.Draw()
-
+	gm.uiSystem.HandleGameStateRender(gm.state)
 	rl.DrawFPS(10, 10)
-
-	if gm.state == Paused {
-		rl.DrawText("PAUSED", int32(gm.windowWidth/2)-rl.MeasureText("PAUSED", 40)/2, int32(gm.windowHeight/2), 40, rl.Gray)
-	}
 	rl.EndDrawing()
+}
+
+func (gm *GameManager) handleButtonInputs() {
+	switch gm.state {
+	case Start:
+		if rl.IsKeyPressed(rl.KeyEnter) {
+			gm.GameSetup()
+		}
+	case Playing:
+		if rl.IsKeyPressed(rl.KeyEscape) {
+			gm.state = Paused
+		}
+	case Paused:
+		if rl.IsKeyPressed(rl.KeyEscape) {
+			gm.state = Playing
+		}
+	case GameOver:
+		if rl.IsKeyPressed(rl.KeyEnter) {
+			gm.GameSetup()
+		}
+	}
 }
 
 func (gm *GameManager) GameSetup() {
@@ -77,14 +103,18 @@ func (gm *GameManager) GameSetup() {
 	gm.windowHeight = rl.GetScreenHeight()
 	gm.windowWidth = rl.GetScreenWidth()
 	gm.fps = rl.GetFPS()
-	loadAssets()
+	gm.state = Loading
+	if !gm.assetsLoaded {
+		gm.loadAssets()
+		gm.assetsLoaded = true
+	}
 
 	gm.entities = []entities.GameEntity{}
 
 	bg := entities.CreateBackground(&BackgroundTexture, float32(gm.windowWidth), float32(gm.windowHeight))
 	gm.entities = append(gm.entities, bg)
 
-	player := entities.CreatePlayer(&PlayerTexture, &ProjectileTexture)
+	player := entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
 	gm.entities = append(gm.entities, player)
 
 	em := entities.CreateEnemyManager(EnemyTextures)
@@ -92,11 +122,11 @@ func (gm *GameManager) GameSetup() {
 
 	gm.collisionSystem = CreateCollisionManager(player, em)
 	gm.uiSystem = CreateUIManager(player, em)
-
+	gm.level = 0
 	gm.state = Playing
 }
 
-func loadAssets() {
+func (gm *GameManager) loadAssets() {
 	PlayerTexture = rl.LoadTexture("assets/player/1B.png")
 	BackgroundTexture = rl.LoadTexture("assets/background.jpg")
 	ProjectileTexture = rl.LoadTexture("assets/projectile/rocket.png")
@@ -104,4 +134,28 @@ func loadAssets() {
 	EnemyTextures = append(EnemyTextures, rl.LoadTexture("assets/enemies/Emissary.png"))
 	rl.SetTextureWrap(BackgroundTexture, rl.RL_TEXTURE_WRAP_REPEAT)
 	rl.SetTextureWrap(ProjectileTexture, rl.RL_TEXTURE_WRAP_REPEAT)
+}
+
+func CreateGameManager() *GameManager {
+	gm := &GameManager{
+		entities: []entities.GameEntity{},
+	}
+
+	settings := GameSettings{
+		targetFPS:    120,
+		screenWidth:  rl.GetScreenWidth(),
+		screenHeight: rl.GetScreenHeight(),
+		fullscreen:   false,
+		keys: entities.InputMap{
+			KeyLeft:  rl.KeyA,
+			KeyUp:    rl.KeyW,
+			KeyRight: rl.KeyD,
+			KeyDown:  rl.KeyS,
+			KeyFire:  rl.KeySpace,
+		},
+	}
+
+	gm.currentSettings = settings
+
+	return gm
 }
