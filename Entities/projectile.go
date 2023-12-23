@@ -17,6 +17,7 @@ type Projectile struct {
 	frameLimiter int
 	framespeed   int
 	scale        float32
+	active       bool
 }
 
 func (p *Projectile) Setup() {
@@ -51,4 +52,12 @@ func (p *Projectile) Update() {
 
 func (p *Projectile) GetID() uuid.UUID {
 	return p.id
+}
+
+func (p *Projectile) Activate(active bool) {
+	p.active = active
+}
+
+func (p *Projectile) GetRect() rl.Rectangle {
+	return p.destRect
 }

@@ -22,11 +22,13 @@ type Player struct {
 	destRect rl.Rectangle
 	keyMap   InputMap
 	projPool ObjectPool[*Projectile]
+	projTex  rl.Texture2D
 	health   int
 	score    int
+	active   bool
 }
 
-func CreatePlayer(tex *rl.Texture2D) *Player {
+func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D) *Player {
 	return &Player{
 		id:      uuid.New(),
 		texture: *(tex),
@@ -49,11 +51,17 @@ func CreatePlayer(tex *rl.Texture2D) *Player {
 			inactivePool: make([]*Projectile, 0, 200),
 			createFn:     createProjectile,
 		},
-		health: 100,
+		projTex: *projTex,
+		health:  100,
+		active:  true,
 	}
 }
 
 func (p *Player) Draw() {
+	if !p.active {
+		return
+	}
+
 	if p.health <= 0 {
 		return
 	}
@@ -65,6 +73,10 @@ func (p *Player) Draw() {
 }
 
 func (p *Player) Update() {
+	if !p.active {
+		return
+	}
+
 	if p.health <= 0 {
 		//TODO: Add game over screen
 		return
@@ -131,11 +143,17 @@ func (p *Player) clampPlayerBounds() {
 
 func (p *Player) fire() {
 	proj := p.projPool.Get()
+	if proj.texture.ID == 0 {
+		proj.texture = p.projTex
+		proj.frameSize = int(p.projTex.Width) / 3
+		proj.srcRect = rl.NewRectangle(0.0, 0.0, float32(proj.frameSize), float32(p.projTex.Height))
+		proj.destRect = rl.NewRectangle(0.0, 0.0, float32(proj.frameSize)*float32(proj.scale), float32(p.projTex.Height)*float32(proj.scale))
+	}
 	proj.destRect.X = p.destRect.X + (float32(p.texture.Width) / 3.75)
 	proj.destRect.Y = p.destRect.Y
 }
 
-func (p *Player) Damage(dmg int) {
+func (p *Player) TakeDamage(dmg int) {
 	p.health -= dmg
 	if p.health <= 0 {
 		p.health = 0
@@ -151,21 +169,36 @@ func (p *Player) DestroyProjectile(proj *Projectile) {
 	p.score += 10
 }
 
+func (p *Player) Activate(active bool) {
+	p.active = active
+}
+
+func (p *Player) GetRect() rl.Rectangle {
+	return p.destRect
+}
+
+func (p *Player) GetProjeciles() map[uuid.UUID]*Projectile {
+	return p.projPool.activePool
+}
+
+func (p *Player) GetHealth() int {
+	return p.health
+}
+
+func (p *Player) GetScore() int {
+	return p.score
+}
+
 func createProjectile() GameEntity {
 	frameCount := 3
-	frameSize := int(ProjectileTexture.Width) / 3
 	scale := 3.0
 	speed := 7.5
 
 	return &Projectile{
 		id:         uuid.New(),
-		texture:    ProjectileTexture,
 		speed:      float32(speed),
 		frameCount: frameCount,
-		frameSize:  frameSize,
 		scale:      float32(scale),
-		srcRect:    rl.NewRectangle(0.0, 0.0, float32(frameSize), float32(ProjectileTexture.Height)),
-		destRect:   rl.NewRectangle(0.0, 0.0, float32(frameSize)*float32(scale), float32(ProjectileTexture.Height)*float32(scale)),
 		framespeed: 8,
 	}
 }

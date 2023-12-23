@@ -16,6 +16,7 @@ type Enemy struct {
 	damage    int
 	score     int
 	scoreTick int
+	active    bool
 }
 
 func (e *Enemy) Draw() {
@@ -59,4 +60,20 @@ func (e *Enemy) Update() {
 
 func (e *Enemy) GetID() uuid.UUID {
 	return e.id
+}
+
+func (e *Enemy) Activate(active bool) {
+	e.active = active
+}
+
+func (e *Enemy) GetDamage() int {
+	return e.damage
+}
+
+func (e *Enemy) GetScore() int {
+	return e.score
+}
+
+func (e *Enemy) GetRect() rl.Rectangle {
+	return e.destRect
 }

@@ -1,21 +1,21 @@
-package entities
+package systems
 
 import (
 	"fmt"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
-	"github.com/google/uuid"
+	entities "github.com/prestonchoate/space-shmup/Entities"
 )
 
 type UIManager struct {
-	player       *Player
-	enemyManager *EnemyManager
+	player       *entities.Player
+	enemyManager *entities.EnemyManager
 	health       int
 	score        int
 	enemyCount   int
 }
 
-func CreateUIManager(p *Player, em *EnemyManager) *UIManager {
+func CreateUIManager(p *entities.Player, em *entities.EnemyManager) *UIManager {
 	return &UIManager{
 		player:       p,
 		enemyManager: em,
@@ -23,9 +23,9 @@ func CreateUIManager(p *Player, em *EnemyManager) *UIManager {
 }
 
 func (u *UIManager) Update() {
-	u.health = u.player.health
-	u.score = u.player.score
-	u.enemyCount = len(u.enemyManager.enemies.activePool)
+	u.health = u.player.GetHealth()
+	u.score = u.player.GetScore()
+	u.enemyCount = u.enemyManager.GetEnemyCount()
 }
 
 func (u *UIManager) Draw() {
@@ -50,8 +50,4 @@ func (u *UIManager) Draw() {
 		60,
 		20,
 		rl.Gray)
-}
-
-func (u *UIManager) GetID() uuid.UUID {
-	return uuid.Nil
 }

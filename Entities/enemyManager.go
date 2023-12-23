@@ -13,15 +13,22 @@ type EnemyManager struct {
 	id            uuid.UUID
 	enemyTextures []rl.Texture2D
 	enemyCount    int
+	active        bool
 }
 
 func (em *EnemyManager) Draw() {
+	if !em.active {
+		return
+	}
 	for _, e := range em.enemies.activePool {
 		e.Draw()
 	}
 }
 
 func (em *EnemyManager) Update() {
+	if !em.active {
+		return
+	}
 	for _, e := range em.enemies.activePool {
 		if e.texture.ID <= 0 {
 			fmt.Println("Enemy texture is nil, setting to random texture")
@@ -51,12 +58,24 @@ func (em *EnemyManager) GetID() uuid.UUID {
 	return em.id
 }
 
+func (em *EnemyManager) Activate(active bool) {
+	em.active = active
+}
+
 func (em *EnemyManager) DestroyEnemy(e *Enemy) {
 	e.destRect.Y = float32(rl.GetRandomValue(-3000, -100))
 	e.score = int(rl.GetRandomValue(10, 250))
 	e.scoreTick = 120
 	e.speed = float32(rl.GetRandomValue(1.0, 4.0))
 	em.enemies.Return(e)
+}
+
+func (em *EnemyManager) GetEnemies() map[uuid.UUID]*Enemy {
+	return em.enemies.activePool
+}
+
+func (em *EnemyManager) GetEnemyCount() int {
+	return len(em.enemies.activePool)
 }
 
 func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
@@ -69,6 +88,7 @@ func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
 			inactivePool: make([]*Enemy, 0, 20000),
 			createFn:     createEnemy,
 		},
+		active: true,
 	}
 
 	return em
