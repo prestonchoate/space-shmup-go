@@ -33,7 +33,7 @@ func (p *Projectile) Setup() {
 
 	p.destRect.Width = float32(p.frameSize) * p.scale
 	p.destRect.Height = float32(p.texture.Height) * p.scale
-	rl.SetTextureWrap(p.texture, rl.RL_TEXTURE_WRAP_REPEAT)
+	rl.SetTextureWrap(p.texture, rl.WrapRepeat)
 	p.framespeed = 8
 }
 
