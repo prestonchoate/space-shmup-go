@@ -46,23 +46,38 @@ func (u *UIManager) HandleGameStateRender(state GameState) {
 	screen, exists := u.screenList[state]
 	if exists {
 		screen.Draw()
-
 	}
 }
 
 func (u *UIManager) Update(update UIUpdate) {
-	screenState := map[string]any {
+	screenUpdate := map[string]any {
 		"health": update.health,
 		"score": update.score,
 		"enemyCount": update.enemyCount,
 	}
 
 
-	// TODO: Figure out how to grab the GUI state and do game state transitions appropriately
-
-	for _, screen := range u.screenList {
-		screen.Update(&screenState)
+	// TODO: For some reason after transitioning to Playing nothing shows up.....
+	screen, exists := u.screenList[update.state]
+	if exists {
+		screen.Update(screenUpdate)
+		screenState := screen.GetScreenState()
+		switch update.state {
+			case Start:
+				startButtonPressed, exists := screenState["startButtonPressed"].(bool)
+				if exists && startButtonPressed {
+					u.TransitionReady = true
+					u.TransitionState = Playing
+				}
+				break;
+			case Playing:
+				break;
+			default:
+				break;
+		}
 	}
+
+	
 
 }
 

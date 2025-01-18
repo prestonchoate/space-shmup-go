@@ -1,7 +1,7 @@
 package ui
 
 type Screens interface {
-	Update(state *map[string]any)
+	Update(state map[string]any)
 	Draw()
-	GetScreenState() *map[string]any
+	GetScreenState() map[string]any
 }

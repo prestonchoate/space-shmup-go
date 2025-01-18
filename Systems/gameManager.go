@@ -83,6 +83,12 @@ func (gm *GameManager) Update() {
 		enemyCount: gm.EnemyManager.GetEnemyCount(),
 		state: gm.state,
 	})
+
+	if gm.uiSystem.TransitionReady {
+		// TODO: check if transitioning to the Playing state. If so call the GameSetup() function
+		gm.state = gm.uiSystem.TransitionState
+		gm.uiSystem.TransitionReady = false
+	}
 }
 
 func (gm *GameManager) Draw() {
@@ -172,6 +178,5 @@ func createGameManager() *GameManager {
 	
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager(gm.Player, gm.EnemyManager)
-	
 	return gm
 }

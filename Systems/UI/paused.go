@@ -20,13 +20,13 @@ func (p *PausedScreen) Draw() {
 }
 
 // GetScreenState implements Screens.
-func (p *PausedScreen) GetScreenState() *map[string]any {
-	return &p.ScreenState
+func (p *PausedScreen) GetScreenState() map[string]any {
+	return p.ScreenState
 }
 
 // Update implements Screens.
-func (p *PausedScreen) Update(state *map[string]any) {
-	for key, val := range *state {
+func (p *PausedScreen) Update(state map[string]any) {
+	for key, val := range state {
 		p.ScreenState[key] = val
 	}
 }

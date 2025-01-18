@@ -11,7 +11,7 @@ type MainMenuScreen struct {
 	ScreenState map[string]any
 }
 
-func (m *MainMenuScreen) Update(state *map[string]any) {
+func (m *MainMenuScreen) Update(state map[string]any) {
 
 }
 
@@ -40,6 +40,6 @@ func (m *MainMenuScreen) Draw() {
 	)
 }
 
-func (m *MainMenuScreen) GetScreenState() *map[string]any {
-	return &m.ScreenState
+func (m *MainMenuScreen) GetScreenState() map[string]any {
+	return m.ScreenState
 }

@@ -11,8 +11,8 @@ type PlayingScreen struct {
 }
 
 // Update implements Screens.
-func (p *PlayingScreen) Update(state *map[string]any) {
-	for key, val := range *state {
+func (p *PlayingScreen) Update(state map[string]any) {
+	for key, val := range state {
 		p.ScreenState[key] = val
 	}
 }
@@ -43,8 +43,8 @@ func (p *PlayingScreen) Draw() {
 }
 
 // GetScreenState implements Screens.
-func (p *PlayingScreen) GetScreenState() *map[string]any {
-	return &p.ScreenState
+func (p *PlayingScreen) GetScreenState() map[string]any {
+	return p.ScreenState
 }
 
 func (p *PlayingScreen) getStateValue(key string) any {
