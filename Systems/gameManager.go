@@ -78,14 +78,17 @@ func (gm *GameManager) Update() {
 	}
 
 	gm.uiSystem.Update(UIUpdate{
-		health: gm.Player.GetHealth(),
-		score: gm.Player.GetScore(),
+		health:     gm.Player.GetHealth(),
+		score:      gm.Player.GetScore(),
 		enemyCount: gm.EnemyManager.GetEnemyCount(),
-		state: gm.state,
+		state:      gm.state,
 	})
 
 	if gm.uiSystem.TransitionReady {
 		// TODO: check if transitioning to the Playing state. If so call the GameSetup() function
+		if gm.uiSystem.TransitionState == Playing {
+			gm.GameSetup()
+		}
 		gm.state = gm.uiSystem.TransitionState
 		gm.uiSystem.TransitionReady = false
 	}
@@ -172,10 +175,10 @@ func createGameManager() *GameManager {
 	}
 
 	gm.currentSettings = settings
-	
+
 	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
 	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
-	
+
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager(gm.Player, gm.EnemyManager)
 	return gm
