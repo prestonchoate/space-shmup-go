@@ -16,6 +16,11 @@ type EnemyManager struct {
 	active        bool
 }
 
+func (em *EnemyManager) Reset() {
+	em.enemyCount = 10
+	em.enemies.Reset()
+}
+
 func (em *EnemyManager) Draw() {
 	if !em.active {
 		return

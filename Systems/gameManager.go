@@ -20,6 +20,7 @@ const (
 	Playing
 	Menu
 	GameOver
+	Restart
 )
 
 type GameSettings struct {
@@ -85,11 +86,13 @@ func (gm *GameManager) Update() {
 	})
 
 	if gm.uiSystem.TransitionReady {
-		// TODO: check if transitioning to the Playing state. If so call the GameSetup() function
 		if gm.uiSystem.TransitionState == Playing {
 			gm.GameSetup()
+			gm.state = Playing
 		}
-		gm.state = gm.uiSystem.TransitionState
+		if gm.uiSystem.TransitionState == Restart {
+			gm.Reset()
+		}
 		gm.uiSystem.TransitionReady = false
 	}
 }
@@ -115,11 +118,15 @@ func (gm *GameManager) handleButtonInputs() {
 		if rl.IsKeyPressed(rl.KeyEscape) {
 			gm.state = Playing
 		}
-	case GameOver:
-		if rl.IsKeyPressed(rl.KeyEnter) {
-			gm.GameSetup()
-		}
 	}
+}
+
+func (gm *GameManager) Reset() {
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
+	gm.collisionSystem.player = gm.Player
+	gm.collisionSystem.enemyManager = gm.EnemyManager
+	gm.GameSetup()
 }
 
 func (gm *GameManager) GameSetup() {
@@ -180,6 +187,6 @@ func createGameManager() *GameManager {
 	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
 
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
-	gm.uiSystem = CreateUIManager(gm.Player, gm.EnemyManager)
+	gm.uiSystem = CreateUIManager()
 	return gm
 }

@@ -1,7 +1,6 @@
 package systems
 
 import (
-	entities "github.com/prestonchoate/space-shmup/Entities"
 	ui "github.com/prestonchoate/space-shmup/Systems/UI"
 )
 
@@ -18,7 +17,7 @@ type UIUpdate struct {
 	state      GameState
 }
 
-func CreateUIManager(p *entities.Player, em *entities.EnemyManager) *UIManager {
+func CreateUIManager() *UIManager {
 	screens := make(map[GameState]ui.Screens)
 
 	screens[Start] = &ui.MainMenuScreen{
@@ -66,9 +65,20 @@ func (u *UIManager) Update(update UIUpdate) {
 			if exists && startButtonPressed {
 				u.TransitionReady = true
 				u.TransitionState = Playing
+				screenState["startButtonPressed"] = false
+				screen.Update(screenState)
 			}
 			break
 		case Playing:
+			break
+		case GameOver:
+			restartButtonPressed, exists := screenState["restartButtonPressed"].(bool)
+			if exists && restartButtonPressed {
+				u.TransitionReady = true
+				u.TransitionState = Restart
+				screenState["restartButtonPressed"] = false
+				screen.Update(screenState)
+			}
 			break
 		default:
 			break
