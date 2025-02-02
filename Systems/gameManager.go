@@ -1,8 +1,13 @@
 package systems
 
 import (
+	"fmt"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	entities "github.com/prestonchoate/space-shmup/Entities"
+	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
+	events "github.com/prestonchoate/space-shmup/Systems/Events"
+	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 )
 
 var PlayerTexture rl.Texture2D
@@ -11,17 +16,6 @@ var ProjectileTexture rl.Texture2D
 var EnemyTextures []rl.Texture2D
 var gameManagerInstance *GameManager
 
-type GameState int
-
-const (
-	Start GameState = iota
-	Loading
-	Paused
-	Playing
-	Menu
-	GameOver
-	Restart
-)
 
 type GameSettings struct {
 	targetFPS    int32
@@ -37,7 +31,7 @@ type GameManager struct {
 	windowWidth     int
 	fps             int32
 	level           int
-	state           GameState
+	state           systems_data.GameState
 	uiSystem        *UIManager
 	collisionSystem *CollisionManager
 	assetsLoaded    bool
@@ -56,25 +50,22 @@ func GetGameMangerInstance() *GameManager {
 
 func (gm *GameManager) Update() {
 	gm.handleButtonInputs()
-	if gm.state == Playing && gm.assetsLoaded == false {
+	if gm.state == systems_data.Playing && gm.assetsLoaded == false {
 		gm.GameSetup()
 	}
 
 	for _, entity := range gm.entities {
-		entity.Activate(gm.state == Playing)
+		entity.Activate(gm.state == systems_data.Playing)
 		entity.Update()
 	}
 
-	if gm.Player.GetHealth() <= 0 {
-		gm.state = GameOver
-	}
-
+	// TODO: Handle this in EnemyManager and emit an event when all enemies are cleared
 	if gm.EnemyManager.GetEnemyCount() == 0 {
 		gm.level++
 		gm.EnemyManager.SpawnNewEnemies(gm.level)
 	}
 
-	if gm.state == Playing {
+	if gm.state == systems_data.Playing {
 		gm.collisionSystem.Update()
 	}
 
@@ -84,17 +75,6 @@ func (gm *GameManager) Update() {
 		enemyCount: gm.EnemyManager.GetEnemyCount(),
 		state:      gm.state,
 	})
-
-	if gm.uiSystem.TransitionReady {
-		if gm.uiSystem.TransitionState == Playing {
-			gm.GameSetup()
-			gm.state = Playing
-		}
-		if gm.uiSystem.TransitionState == Restart {
-			gm.Reset()
-		}
-		gm.uiSystem.TransitionReady = false
-	}
 }
 
 func (gm *GameManager) Draw() {
@@ -110,13 +90,13 @@ func (gm *GameManager) Draw() {
 
 func (gm *GameManager) handleButtonInputs() {
 	switch gm.state {
-	case Playing:
+	case systems_data.Playing:
 		if rl.IsKeyPressed(rl.KeyEscape) {
-			gm.state = Paused
+			gm.state = systems_data.Paused
 		}
-	case Paused:
+	case systems_data.Paused:
 		if rl.IsKeyPressed(rl.KeyEscape) {
-			gm.state = Playing
+			gm.state = systems_data.Playing
 		}
 	}
 }
@@ -134,7 +114,7 @@ func (gm *GameManager) GameSetup() {
 	gm.windowHeight = rl.GetScreenHeight()
 	gm.windowWidth = rl.GetScreenWidth()
 	gm.fps = rl.GetFPS()
-	gm.state = Loading
+	gm.state = systems_data.Loading
 	if !gm.assetsLoaded {
 		gm.loadAssets()
 		gm.assetsLoaded = true
@@ -147,7 +127,7 @@ func (gm *GameManager) GameSetup() {
 	gm.entities = append(gm.entities, gm.EnemyManager)
 
 	gm.level = 0
-	gm.state = Playing
+	gm.state = systems_data.Playing
 }
 
 func (gm *GameManager) loadAssets() {
@@ -188,5 +168,19 @@ func createGameManager() *GameManager {
 
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager()
+
+	events.GetEventManagerInstance().Subscribe("changeState", gm.handleChangeStateEvent)
 	return gm
+}
+
+func (gm *GameManager) handleChangeStateEvent(e events.Event) {
+	if data, ok := e.Data.(events_data.ChangeStateData); ok {
+		fmt.Println("Processing change state event. Changing to: ", data.NewState)
+		gm.state = data.NewState
+		if gm.state == systems_data.Playing {
+			gm.GameSetup()
+		} else if gm.state == systems_data.Restart {
+			gm.Reset()
+		}
+	}
 }

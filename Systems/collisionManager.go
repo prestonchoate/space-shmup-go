@@ -22,6 +22,7 @@ func (c *CollisionManager) Update() {
 	c.checkProjectileCollision()
 }
 
+// TODO: Convert this to an event that emits the player position and lets every Enemy check if a collision occurs
 func (c *CollisionManager) checkPlayerCollision() {
 	for _, e := range c.enemyManager.GetEnemies() {
 		if checkCollisionRecs(c.player.GetRect(), e.GetRect()) {
@@ -31,6 +32,7 @@ func (c *CollisionManager) checkPlayerCollision() {
 	}
 }
 
+// TODO: Convert this to an event emitted by each projectile that each enemy will be subscribed to in order to check if a collison occurs
 func (c *CollisionManager) checkProjectileCollision() {
 	for _, proj := range c.player.GetProjeciles() {
 		for _, e := range c.enemyManager.GetEnemies() {

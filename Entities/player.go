@@ -3,6 +3,9 @@ package entities
 import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
+	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
+	events "github.com/prestonchoate/space-shmup/Systems/Events"
+	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 )
 
 const DEFAULT_DAMAGE_TICKS = 15
@@ -112,6 +115,10 @@ func (p *Player) Update() {
 			p.projPool.Return(proj)
 		}
 	}
+
+	if p.health <= 0 {
+		events.GetEventManagerInstance().Emit("changeState", events_data.ChangeStateData{NewState: systems_data.GameOver})
+	}
 }
 
 func (p *Player) GetID() uuid.UUID {
@@ -137,6 +144,10 @@ func (p *Player) handlePlayerInput() {
 
 	if rl.IsKeyPressed(p.keyMap.KeyFire) {
 		p.fire()
+	}
+
+	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyEnd) {
+		p.TakeDamage(10000000)
 	}
 }
 
