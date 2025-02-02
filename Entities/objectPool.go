@@ -29,3 +29,10 @@ func (op *ObjectPool[T]) Return(obj T) {
 	delete(op.activePool, obj.GetID())
 	op.inactivePool = append(op.inactivePool, obj)
 }
+
+func (op *ObjectPool[T]) Reset() {
+	for _, o := range op.activePool {
+		op.inactivePool = append(op.inactivePool, o)
+		delete(op.activePool, o.GetID())
+	}
+}

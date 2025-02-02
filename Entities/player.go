@@ -56,6 +56,16 @@ func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys InputMap) *Play
 	}
 }
 
+func (p *Player) Reset() {
+	p.health = 100
+	p.active = true
+	p.destRect = rl.NewRectangle(float32(p.texture.Width),
+		float32(rl.GetScreenHeight()-int(p.texture.Height)),
+		float32(p.texture.Width),
+		float32(p.texture.Height))
+	p.projPool.Reset()
+}
+
 func (p *Player) Draw() {
 	if !p.active {
 		return

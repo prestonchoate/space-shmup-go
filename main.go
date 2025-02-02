@@ -16,7 +16,7 @@ func main() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(TARGET_FPS)
 
-	gm := systems.CreateGameManager()
+	gm := systems.GetGameMangerInstance()
 
 	for !rl.WindowShouldClose() {
 		gm.Update()

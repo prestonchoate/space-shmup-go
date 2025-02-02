@@ -9,6 +9,7 @@ var PlayerTexture rl.Texture2D
 var BackgroundTexture rl.Texture2D
 var ProjectileTexture rl.Texture2D
 var EnemyTextures []rl.Texture2D
+var gameManagerInstance *GameManager
 
 type GameState int
 
@@ -19,6 +20,7 @@ const (
 	Playing
 	Menu
 	GameOver
+	Restart
 )
 
 type GameSettings struct {
@@ -40,30 +42,59 @@ type GameManager struct {
 	collisionSystem *CollisionManager
 	assetsLoaded    bool
 	currentSettings GameSettings
+	Player          *entities.Player
+	EnemyManager    *entities.EnemyManager
+}
+
+func GetGameMangerInstance() *GameManager {
+	if gameManagerInstance == nil {
+		gameManagerInstance = createGameManager()
+	}
+
+	return gameManagerInstance
 }
 
 func (gm *GameManager) Update() {
 	gm.handleButtonInputs()
+	if gm.state == Playing && gm.assetsLoaded == false {
+		gm.GameSetup()
+	}
+
 	for _, entity := range gm.entities {
 		entity.Activate(gm.state == Playing)
 		entity.Update()
-		if em, ok := entity.(*entities.EnemyManager); ok {
-			if em.GetEnemyCount() == 0 {
-				gm.level++
-				em.SpawnNewEnemies(gm.level)
-			}
-		}
-		if p, ok := entity.(*entities.Player); ok {
-			if p.GetHealth() <= 0 {
-				gm.state = GameOver
-			}
-		}
 	}
+
+	if gm.Player.GetHealth() <= 0 {
+		gm.state = GameOver
+	}
+
+	if gm.EnemyManager.GetEnemyCount() == 0 {
+		gm.level++
+		gm.EnemyManager.SpawnNewEnemies(gm.level)
+	}
+
 	if gm.state == Playing {
 		gm.collisionSystem.Update()
 	}
 
-	gm.uiSystem.Update(gm.state)
+	gm.uiSystem.Update(UIUpdate{
+		health:     gm.Player.GetHealth(),
+		score:      gm.Player.GetScore(),
+		enemyCount: gm.EnemyManager.GetEnemyCount(),
+		state:      gm.state,
+	})
+
+	if gm.uiSystem.TransitionReady {
+		if gm.uiSystem.TransitionState == Playing {
+			gm.GameSetup()
+			gm.state = Playing
+		}
+		if gm.uiSystem.TransitionState == Restart {
+			gm.Reset()
+		}
+		gm.uiSystem.TransitionReady = false
+	}
 }
 
 func (gm *GameManager) Draw() {
@@ -79,10 +110,6 @@ func (gm *GameManager) Draw() {
 
 func (gm *GameManager) handleButtonInputs() {
 	switch gm.state {
-	case Start:
-		if rl.IsKeyPressed(rl.KeyEnter) {
-			gm.GameSetup()
-		}
 	case Playing:
 		if rl.IsKeyPressed(rl.KeyEscape) {
 			gm.state = Paused
@@ -91,11 +118,15 @@ func (gm *GameManager) handleButtonInputs() {
 		if rl.IsKeyPressed(rl.KeyEscape) {
 			gm.state = Playing
 		}
-	case GameOver:
-		if rl.IsKeyPressed(rl.KeyEnter) {
-			gm.GameSetup()
-		}
 	}
+}
+
+func (gm *GameManager) Reset() {
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
+	gm.collisionSystem.player = gm.Player
+	gm.collisionSystem.enemyManager = gm.EnemyManager
+	gm.GameSetup()
 }
 
 func (gm *GameManager) GameSetup() {
@@ -110,18 +141,11 @@ func (gm *GameManager) GameSetup() {
 	}
 
 	gm.entities = []entities.GameEntity{}
-
 	bg := entities.CreateBackground(&BackgroundTexture, float32(gm.windowWidth), float32(gm.windowHeight))
 	gm.entities = append(gm.entities, bg)
+	gm.entities = append(gm.entities, gm.Player)
+	gm.entities = append(gm.entities, gm.EnemyManager)
 
-	player := entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
-	gm.entities = append(gm.entities, player)
-
-	em := entities.CreateEnemyManager(EnemyTextures)
-	gm.entities = append(gm.entities, em)
-
-	gm.collisionSystem = CreateCollisionManager(player, em)
-	gm.uiSystem = CreateUIManager(player, em)
 	gm.level = 0
 	gm.state = Playing
 }
@@ -132,14 +156,16 @@ func (gm *GameManager) loadAssets() {
 	ProjectileTexture = rl.LoadTexture("assets/projectile/rocket.png")
 
 	EnemyTextures = append(EnemyTextures, rl.LoadTexture("assets/enemies/Emissary.png"))
-	rl.SetTextureWrap(BackgroundTexture, rl.RL_TEXTURE_WRAP_REPEAT)
-	rl.SetTextureWrap(ProjectileTexture, rl.RL_TEXTURE_WRAP_REPEAT)
+	rl.SetTextureWrap(BackgroundTexture, rl.WrapRepeat)
+	rl.SetTextureWrap(ProjectileTexture, rl.WrapRepeat)
 }
 
-func CreateGameManager() *GameManager {
+func createGameManager() *GameManager {
 	gm := &GameManager{
 		entities: []entities.GameEntity{},
 	}
+	gm.loadAssets()
+	gm.assetsLoaded = true
 
 	settings := GameSettings{
 		targetFPS:    120,
@@ -157,5 +183,10 @@ func CreateGameManager() *GameManager {
 
 	gm.currentSettings = settings
 
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
+
+	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
+	gm.uiSystem = CreateUIManager()
 	return gm
 }
