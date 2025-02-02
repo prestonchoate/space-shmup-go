@@ -13,6 +13,8 @@ const (
 )
 
 func main() {
+	// TODO: Create an asset manager that embeds the ./assets/ directory
+
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Space Shoot Em Up - Raylib Go")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(TARGET_FPS)
