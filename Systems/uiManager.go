@@ -8,7 +8,7 @@ import (
 )
 
 type UIManager struct {
-	screenList      map[systems_data.GameState]ui.Screens
+	screenList map[systems_data.GameState]ui.Screens
 }
 
 type UIUpdate struct {
@@ -66,7 +66,7 @@ func (u *UIManager) Update(update UIUpdate) {
 			if exists && startButtonPressed {
 				screenState["startButtonPressed"] = false
 				screen.Update(screenState)
-				events.GetEventManagerInstance().Emit("changeState", events_data.ChangeStateData{
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Playing,
 				})
 			}
@@ -78,7 +78,7 @@ func (u *UIManager) Update(update UIUpdate) {
 			if exists && restartButtonPressed {
 				screenState["restartButtonPressed"] = false
 				screen.Update(screenState)
-				events.GetEventManagerInstance().Emit("changeState", events_data.ChangeStateData{
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Restart,
 				})
 			}

@@ -2,13 +2,15 @@ package events
 
 import (
 	"sync"
+
+	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 )
 
 var instance *EventManager
 
 // When emiting an event this is the struct that will come through
 type Event struct {
-	Name string
+	Name events_data.EventName
 	Data any
 }
 
@@ -18,7 +20,7 @@ type EventHandler func(event Event)
 // For now this is a "dumb" event manager in that there is no way to keep track of one handler from another
 // it may be beneficial in the future to change this to a system that allows for unsubscribes
 type EventManager struct {
-	subscribers map[string][]EventHandler
+	subscribers map[events_data.EventName][]EventHandler
 	mu          sync.RWMutex
 }
 
@@ -26,7 +28,7 @@ type EventManager struct {
 func GetEventManagerInstance() *EventManager {
 	if instance == nil {
 		instance = &EventManager{
-			subscribers: make(map[string][]EventHandler),
+			subscribers: make(map[events_data.EventName][]EventHandler),
 		}
 	}
 
@@ -34,14 +36,14 @@ func GetEventManagerInstance() *EventManager {
 }
 
 // This will add a handler to the slice of handlers for an event name
-func (em *EventManager) Subscribe(eventName string, handler EventHandler) {
+func (em *EventManager) Subscribe(eventName events_data.EventName, handler EventHandler) {
 	em.mu.Lock()
 	defer em.mu.Unlock()
 	em.subscribers[eventName] = append(em.subscribers[eventName], handler)
 }
 
 // This allows for abitrary event dispatch and each handler for that event will be notified
-func (em *EventManager) Emit(eventName string, data any) {
+func (em *EventManager) Emit(eventName events_data.EventName, data any) {
 	em.mu.RLock()
 	defer em.mu.RUnlock()
 
