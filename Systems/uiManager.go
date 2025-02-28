@@ -1,38 +1,39 @@
 package systems
 
 import (
+	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
+	events "github.com/prestonchoate/space-shmup/Systems/Events"
+	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 	ui "github.com/prestonchoate/space-shmup/Systems/UI"
 )
 
 type UIManager struct {
-	TransitionReady bool
-	TransitionState GameState
-	screenList      map[GameState]ui.Screens
+	screenList map[systems_data.GameState]ui.Screens
 }
 
 type UIUpdate struct {
 	health     int
 	score      int
 	enemyCount int
-	state      GameState
+	state      systems_data.GameState
 }
 
 func CreateUIManager() *UIManager {
-	screens := make(map[GameState]ui.Screens)
+	screens := make(map[systems_data.GameState]ui.Screens)
 
-	screens[Start] = &ui.MainMenuScreen{
+	screens[systems_data.Start] = &ui.MainMenuScreen{
 		ScreenState: make(map[string]any),
 	}
 
-	screens[Playing] = &ui.PlayingScreen{
+	screens[systems_data.Playing] = &ui.PlayingScreen{
 		ScreenState: make(map[string]any),
 	}
 
-	screens[Paused] = &ui.PausedScreen{
+	screens[systems_data.Paused] = &ui.PausedScreen{
 		ScreenState: make(map[string]any),
 	}
 
-	screens[GameOver] = &ui.GameOverScreen{
+	screens[systems_data.GameOver] = &ui.GameOverScreen{
 		ScreenState: make(map[string]any),
 	}
 
@@ -41,7 +42,7 @@ func CreateUIManager() *UIManager {
 	}
 }
 
-func (u *UIManager) HandleGameStateRender(state GameState) {
+func (u *UIManager) HandleGameStateRender(state systems_data.GameState) {
 	screen, exists := u.screenList[state]
 	if exists {
 		screen.Draw()
@@ -60,24 +61,46 @@ func (u *UIManager) Update(update UIUpdate) {
 		screen.Update(screenUpdate)
 		screenState := screen.GetScreenState()
 		switch update.state {
-		case Start:
+		case systems_data.Start:
 			startButtonPressed, exists := screenState["startButtonPressed"].(bool)
 			if exists && startButtonPressed {
-				u.TransitionReady = true
-				u.TransitionState = Playing
 				screenState["startButtonPressed"] = false
 				screen.Update(screenState)
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Playing,
+				})
+			}
+			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
+			if exists && exitButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Exit,
+				})
 			}
 			break
-		case Playing:
+		case systems_data.Playing:
 			break
-		case GameOver:
+		case systems_data.Paused:
+			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
+			if exists && exitButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Exit,
+				})
+			}
+			break
+		case systems_data.GameOver:
 			restartButtonPressed, exists := screenState["restartButtonPressed"].(bool)
 			if exists && restartButtonPressed {
-				u.TransitionReady = true
-				u.TransitionState = Restart
 				screenState["restartButtonPressed"] = false
 				screen.Update(screenState)
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Restart,
+				})
+			}
+			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
+			if exists && exitButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Exit,
+				})
 			}
 			break
 		default:
