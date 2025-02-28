@@ -15,8 +15,21 @@ type GameOverScreen struct {
 func (g *GameOverScreen) Draw() {
 	score, exists := g.ScreenState["score"]
 	if !exists {
-		score = 0;
+		score = 0
 	}
+
+	restartButtonText := "RESTART"
+	exitButtonText := "QUIT"
+
+	buttonWidth := rl.MeasureText(restartButtonText, 40)
+	buttonHeight := 80
+	screenWidth := rl.GetScreenWidth()
+	screenHeight := rl.GetScreenHeight()
+
+	spacing := int32(20)
+	totalWidth := (2 * buttonWidth) + spacing
+	startX := (screenWidth - int(totalWidth)) / 2
+	buttonY := (screenHeight / 4) * 3
 
 	rl.DrawText(
 		"GAME OVER",
@@ -35,18 +48,21 @@ func (g *GameOverScreen) Draw() {
 		rl.Gray,
 	)
 
-	restartButtonText := "RESTART"
-	restartButtonX := rl.GetScreenWidth() / 3
-	restartButtonY := (rl.GetScreenHeight() / 4) * 3
-
-	g.ScreenState["restartButtonPressed"] = raygui.Button(
-		rl.Rectangle{
-			X: float32(restartButtonX),
-			Y: float32(restartButtonY),
-			Width: float32(rl.MeasureText(restartButtonText, 40)),
-			Height: float32(rl.MeasureText(restartButtonText, 40)),
-		}, 
+	g.ScreenState["restartButtonPressed"] = raygui.Button(rl.Rectangle{
+		X:      float32(startX),
+		Y:      float32(buttonY),
+		Width:  float32(buttonWidth),
+		Height: float32(buttonHeight),
+	},
 		restartButtonText,
+	)
+	g.ScreenState["exitButtonPressed"] = raygui.Button(rl.Rectangle{
+		X:      float32(startX + int(spacing) + int(buttonWidth)),
+		Y:      float32(buttonY),
+		Width:  float32(buttonWidth),
+		Height: float32(buttonHeight),
+	},
+		exitButtonText,
 	)
 }
 
@@ -61,4 +77,3 @@ func (g *GameOverScreen) Update(state map[string]any) {
 		g.ScreenState[key] = val
 	}
 }
-

@@ -16,7 +16,6 @@ var ProjectileTexture rl.Texture2D
 var EnemyTextures []rl.Texture2D
 var gameManagerInstance *GameManager
 
-
 type GameSettings struct {
 	targetFPS    int32
 	screenWidth  int
@@ -171,6 +170,10 @@ func createGameManager() *GameManager {
 
 	events.GetEventManagerInstance().Subscribe("changeState", gm.handleChangeStateEvent)
 	return gm
+}
+
+func (gm *GameManager) ShouldExit() bool {
+	return gm.state == systems_data.Exit
 }
 
 func (gm *GameManager) handleChangeStateEvent(e events.Event) {

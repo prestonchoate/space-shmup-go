@@ -10,4 +10,5 @@ const (
 	Menu
 	GameOver
 	Restart
+	Exit
 )

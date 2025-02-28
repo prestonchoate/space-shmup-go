@@ -22,7 +22,7 @@ func main() {
 
 	gm := systems.GetGameMangerInstance()
 
-	for !rl.WindowShouldClose() {
+	for !rl.WindowShouldClose() && !gm.ShouldExit() {
 		gm.Update()
 		gm.Draw()
 	}

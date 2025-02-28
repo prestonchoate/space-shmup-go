@@ -70,8 +70,22 @@ func (u *UIManager) Update(update UIUpdate) {
 					NewState: systems_data.Playing,
 				})
 			}
+			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
+			if exists && exitButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Exit,
+				})
+			}
 			break
 		case systems_data.Playing:
+			break
+		case systems_data.Paused:
+			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
+			if exists && exitButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Exit,
+				})
+			}
 			break
 		case systems_data.GameOver:
 			restartButtonPressed, exists := screenState["restartButtonPressed"].(bool)
@@ -80,6 +94,12 @@ func (u *UIManager) Update(update UIUpdate) {
 				screen.Update(screenState)
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Restart,
+				})
+			}
+			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
+			if exists && exitButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Exit,
 				})
 			}
 			break

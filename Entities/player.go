@@ -193,6 +193,7 @@ func (p *Player) TakeDamage(dmg int) {
 	}
 	if p.health <= 0 {
 		p.health = 0
+		events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{NewState: systems_data.GameOver})
 	}
 }
 
