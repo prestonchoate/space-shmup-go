@@ -2,6 +2,7 @@ package systems
 
 import (
 	"fmt"
+	"log"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	entities "github.com/prestonchoate/space-shmup/Entities"
@@ -130,11 +131,34 @@ func (gm *GameManager) GameSetup() {
 }
 
 func (gm *GameManager) loadAssets() {
-	PlayerTexture = rl.LoadTexture("assets/player/1B.png")
-	BackgroundTexture = rl.LoadTexture("assets/background.jpg")
-	ProjectileTexture = rl.LoadTexture("assets/projectile/rocket.png")
+	// TODO: allow all entities to grab their own textures from the AssetManager so that there is a single place to manage that entity's data
+	am := GetAssetManagerInstance()
 
-	EnemyTextures = append(EnemyTextures, rl.LoadTexture("assets/enemies/Emissary.png"))
+	pt, ok := am.GetTexture("assets/player/1B.png")
+	if !ok {
+		log.Fatal("Player texture not available in asset manager")
+	}
+
+	bt, ok := am.GetTexture("assets/background.jpg")
+	if !ok {
+		log.Fatal("Background textrue not available in asset manager")
+	}
+
+	projTex, ok := am.GetTexture("assets/projectile/rocket.png")
+	if !ok {
+		log.Fatal("Projectile texture not available in asset manager")
+	}
+
+	et, ok := am.GetTexture("assets/enemies/Emissary.png")
+	if !ok {
+		log.Fatal("Enemy texture not available in asset manager")
+	}
+
+	PlayerTexture = pt
+	BackgroundTexture = bt
+	ProjectileTexture = projTex
+
+	EnemyTextures = append(EnemyTextures, et)
 	rl.SetTextureWrap(BackgroundTexture, rl.WrapRepeat)
 	rl.SetTextureWrap(ProjectileTexture, rl.WrapRepeat)
 }
