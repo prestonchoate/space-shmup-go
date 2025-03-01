@@ -1,6 +1,8 @@
 package main
 
 import (
+	"embed"
+
 	"github.com/gen2brain/raylib-go/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	systems "github.com/prestonchoate/space-shmup/Systems"
@@ -12,6 +14,9 @@ const (
 	TARGET_FPS    = 120
 )
 
+//go:embed assets/* assets/**/*
+var assetsFS embed.FS
+
 func main() {
 	// TODO: Create an asset manager that embeds the ./assets/ directory
 
@@ -20,6 +25,7 @@ func main() {
 	rl.SetTargetFPS(TARGET_FPS)
 	raygui.LoadStyle("assets/raygui-styles/style_cyber.rgs")
 
+	systems.GetAssetManagerInstance().LoadAssets(assetsFS)
 	gm := systems.GetGameMangerInstance()
 
 	for !rl.WindowShouldClose() && !gm.ShouldExit() {
