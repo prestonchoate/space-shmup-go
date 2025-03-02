@@ -1,4 +1,4 @@
-package systems
+package assets
 
 import (
 	"embed"
@@ -131,6 +131,11 @@ func (am *AssetManager) GetTexture(path string) (rl.Texture2D, bool) {
 	return texture, found
 }
 
+func (am *AssetManager) GetSound(path string) (rl.Sound, bool) {
+	sound, found := am.sounds[path]
+	return sound, found
+}
+
 // UnloadTextures releases all textures.
 func (am *AssetManager) UnloadTextures() {
 	hasSounds := am.sounds != nil
@@ -155,4 +160,3 @@ func (am *AssetManager) UnloadTextures() {
 	am.textures = nil
 	am.sounds = nil
 }
-

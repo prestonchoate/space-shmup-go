@@ -14,13 +14,14 @@ type Background struct {
 }
 
 func CreateBackground(tex *rl.Texture2D, width float32, height float32) *Background {
-	return &Background{
+	bg := &Background{
 		id:       uuid.New(),
 		texture:  *(tex),
 		srcRect:  rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
 		destRect: rl.NewRectangle(0.0, 0.0, width, height),
 	}
 
+	return bg
 }
 
 func (bg *Background) Draw() {

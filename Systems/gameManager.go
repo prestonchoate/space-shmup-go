@@ -6,6 +6,7 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	entities "github.com/prestonchoate/space-shmup/Entities"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
@@ -38,6 +39,7 @@ type GameManager struct {
 	currentSettings GameSettings
 	Player          *entities.Player
 	EnemyManager    *entities.EnemyManager
+	backgroundMusic rl.Sound
 }
 
 func GetGameMangerInstance() *GameManager {
@@ -49,6 +51,11 @@ func GetGameMangerInstance() *GameManager {
 }
 
 func (gm *GameManager) Update() {
+
+	if !rl.IsSoundPlaying(gm.backgroundMusic) {
+		rl.PlaySound(gm.backgroundMusic)
+	}
+
 	gm.handleButtonInputs()
 	if gm.state == systems_data.Playing && gm.assetsLoaded == false {
 		gm.GameSetup()
@@ -132,7 +139,7 @@ func (gm *GameManager) GameSetup() {
 
 func (gm *GameManager) loadAssets() {
 	// TODO: allow all entities to grab their own textures from the AssetManager so that there is a single place to manage that entity's data
-	am := GetAssetManagerInstance()
+	am := assets.GetAssetManagerInstance()
 
 	pt, ok := am.GetTexture("assets/player/1B.png")
 	if !ok {
@@ -184,6 +191,14 @@ func createGameManager() *GameManager {
 		},
 	}
 
+	bgMusic, ok := assets.GetAssetManagerInstance().GetSound("assets/music/deep-space-barrier-121195.mp3")
+	if ok {
+		gm.backgroundMusic = bgMusic
+		rl.PlaySound(gm.backgroundMusic)
+	} else {
+		log.Println("Game Manager: Failed to load bg music from asset manager")
+	}
+
 	gm.currentSettings = settings
 
 	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
@@ -192,7 +207,7 @@ func createGameManager() *GameManager {
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager()
 
-	events.GetEventManagerInstance().Subscribe("changeState", gm.handleChangeStateEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.ChangeGameState, gm.handleChangeStateEvent)
 	return gm
 }
 

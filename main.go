@@ -6,26 +6,33 @@ import (
 	"github.com/gen2brain/raylib-go/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
 	systems "github.com/prestonchoate/space-shmup/Systems"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 )
 
 const (
-	WINDOW_WIDTH  = 1280
-	WINDOW_HEIGHT = 720
-	TARGET_FPS    = 120
+	TARGET_FPS = 120
 )
 
 //go:embed assets/* assets/**/*
 var assetsFS embed.FS
 
 func main() {
-	// TODO: Create an asset manager that embeds the ./assets/ directory
+	rl.InitAudioDevice()
+	defer rl.CloseAudioDevice()
 
-	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Space Shoot Em Up - Raylib Go")
+	rl.InitWindow(0, 0, "Space Shoot Em Up - Raylib Go")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(TARGET_FPS)
-	raygui.LoadStyle("assets/raygui-styles/style_cyber.rgs")
+	data, err := assetsFS.ReadFile("assets/raygui-styles/style_cyber.rgs")
+	if err == nil {
+		raygui.LoadStyleFromMemory(data)
+	}
 
-	systems.GetAssetManagerInstance().LoadAssets(assetsFS)
+	if !rl.IsWindowFullscreen() {
+		rl.ToggleFullscreen()
+	}
+
+	assets.GetAssetManagerInstance().LoadAssets(assetsFS)
 	gm := systems.GetGameMangerInstance()
 
 	for !rl.WindowShouldClose() && !gm.ShouldExit() {
