@@ -10,6 +10,7 @@ import (
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 var PlayerTexture rl.Texture2D
@@ -17,14 +18,6 @@ var BackgroundTexture rl.Texture2D
 var ProjectileTexture rl.Texture2D
 var EnemyTextures []rl.Texture2D
 var gameManagerInstance *GameManager
-
-type GameSettings struct {
-	targetFPS    int32
-	screenWidth  int
-	screenHeight int
-	fullscreen   bool
-	keys         entities.InputMap
-}
 
 type GameManager struct {
 	entities        []entities.GameEntity
@@ -36,7 +29,7 @@ type GameManager struct {
 	uiSystem        *UIManager
 	collisionSystem *CollisionManager
 	assetsLoaded    bool
-	currentSettings GameSettings
+	currentSettings systems_data.GameSettings
 	Player          *entities.Player
 	EnemyManager    *entities.EnemyManager
 	backgroundMusic rl.Sound
@@ -109,7 +102,7 @@ func (gm *GameManager) handleButtonInputs() {
 }
 
 func (gm *GameManager) Reset() {
-	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.Keys)
 	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
 	gm.collisionSystem.player = gm.Player
 	gm.collisionSystem.enemyManager = gm.EnemyManager
@@ -177,20 +170,6 @@ func createGameManager() *GameManager {
 	gm.loadAssets()
 	gm.assetsLoaded = true
 
-	settings := GameSettings{
-		targetFPS:    120,
-		screenWidth:  rl.GetScreenWidth(),
-		screenHeight: rl.GetScreenHeight(),
-		fullscreen:   false,
-		keys: entities.InputMap{
-			KeyLeft:  rl.KeyA,
-			KeyUp:    rl.KeyW,
-			KeyRight: rl.KeyD,
-			KeyDown:  rl.KeyS,
-			KeyFire:  rl.KeySpace,
-		},
-	}
-
 	bgMusic, ok := assets.GetAssetManagerInstance().GetSound("assets/music/deep-space-barrier-121195.mp3")
 	if ok {
 		gm.backgroundMusic = bgMusic
@@ -199,9 +178,9 @@ func createGameManager() *GameManager {
 		log.Println("Game Manager: Failed to load bg music from asset manager")
 	}
 
-	gm.currentSettings = settings
+	gm.currentSettings = saveManager.GetInstance().Data.Settings
 
-	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.Keys)
 	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
 
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)

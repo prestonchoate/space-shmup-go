@@ -10,14 +10,6 @@ import (
 
 const DEFAULT_DAMAGE_TICKS = 15
 
-type InputMap struct {
-	KeyLeft  int32
-	KeyRight int32
-	KeyUp    int32
-	KeyDown  int32
-	KeyFire  int32
-}
-
 type Player struct {
 	id          uuid.UUID
 	texture     rl.Texture2D
@@ -25,7 +17,7 @@ type Player struct {
 	origin      rl.Vector2
 	srcRect     rl.Rectangle
 	destRect    rl.Rectangle
-	keyMap      InputMap
+	keyMap      systems_data.InputMap
 	projPool    ObjectPool[*Projectile]
 	projTex     rl.Texture2D
 	health      int
@@ -35,7 +27,7 @@ type Player struct {
 	damageTicks int
 }
 
-func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys InputMap) *Player {
+func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.InputMap) *Player {
 	return &Player{
 		id:      uuid.New(),
 		texture: *(tex),
