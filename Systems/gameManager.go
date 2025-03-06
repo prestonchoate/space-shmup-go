@@ -45,6 +45,7 @@ func GetGameMangerInstance() *GameManager {
 
 func (gm *GameManager) Update() {
 
+	dt := rl.GetFrameTime()
 	if !rl.IsSoundPlaying(gm.backgroundMusic) {
 		rl.PlaySound(gm.backgroundMusic)
 	}
@@ -56,7 +57,7 @@ func (gm *GameManager) Update() {
 
 	for _, entity := range gm.entities {
 		entity.Activate(gm.state == systems_data.Playing)
-		entity.Update()
+		entity.Update(dt)
 	}
 
 	// TODO: Handle this in EnemyManager and emit an event when all enemies are cleared
@@ -187,6 +188,7 @@ func createGameManager() *GameManager {
 	gm.uiSystem = CreateUIManager()
 
 	events.GetEventManagerInstance().Subscribe(events_data.ChangeGameState, gm.handleChangeStateEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, gm.handleUpdatedSettings)
 	return gm
 }
 
@@ -202,6 +204,19 @@ func (gm *GameManager) handleChangeStateEvent(e events.Event) {
 			gm.GameSetup()
 		} else if gm.state == systems_data.Restart {
 			gm.Reset()
+		}
+	}
+}
+
+func (gm *GameManager) handleUpdatedSettings(e events.Event) {
+	if data, ok := e.Data.(events_data.UpdateSettingsData); ok {
+		fmt.Println("Game Manager: Updating settings")
+		rl.SetTargetFPS(data.NewSettings.TargetFPS)
+		if rl.IsWindowFullscreen() != data.NewSettings.Fullscreen {
+			rl.ToggleFullscreen()
+		}
+		if !rl.IsWindowFullscreen() {
+			rl.SetWindowSize(data.NewSettings.ScreenWidth, data.NewSettings.ScreenHeight)
 		}
 	}
 }

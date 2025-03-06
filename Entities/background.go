@@ -28,8 +28,8 @@ func (bg *Background) Draw() {
 	rl.DrawTexturePro(bg.texture, bg.srcRect, bg.destRect, bg.origin, 0, rl.White)
 }
 
-func (bg *Background) Update() {
-	bg.srcRect.Y -= 1
+func (bg *Background) Update(delta float32) {
+	bg.srcRect.Y -= 100 * delta
 }
 
 func (bg *Background) GetID() uuid.UUID {

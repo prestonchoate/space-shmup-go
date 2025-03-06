@@ -41,8 +41,8 @@ func (p *Projectile) Draw() {
 	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, rl.White)
 }
 
-func (p *Projectile) Update() {
-	p.destRect.Y -= p.speed
+func (p *Projectile) Update(delta float32) {
+	p.destRect.Y -= p.speed * delta
 	p.frameLimiter++
 	if p.frameLimiter >= (int(rl.GetFPS()) / p.framespeed) {
 		p.frameLimiter = 0

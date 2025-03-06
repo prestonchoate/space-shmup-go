@@ -14,22 +14,22 @@ import (
 var assetsFS embed.FS
 
 func main() {
-	saveManager := saveManager.GetInstance()
+	sm := saveManager.GetInstance()
 
 	rl.SetTraceLogLevel(rl.LogError)
 
 	rl.InitAudioDevice()
 	defer rl.CloseAudioDevice()
 
-	rl.InitWindow(int32(saveManager.Data.Settings.ScreenWidth), int32(saveManager.Data.Settings.ScreenHeight), "Space Shoot Em Up - Raylib Go")
+	rl.InitWindow(int32(sm.Data.Settings.ScreenWidth), int32(sm.Data.Settings.ScreenHeight), "Space Shoot Em Up - Raylib Go")
 	defer rl.CloseWindow()
-	rl.SetTargetFPS(saveManager.Data.Settings.TargetFPS)
+	rl.SetTargetFPS(sm.Data.Settings.TargetFPS)
 	data, err := assetsFS.ReadFile("assets/raygui-styles/style_cyber.rgs")
 	if err == nil {
 		raygui.LoadStyleFromMemory(data)
 	}
 
-	if rl.IsWindowFullscreen() != saveManager.Data.Settings.Fullscreen {
+	if rl.IsWindowFullscreen() != sm.Data.Settings.Fullscreen {
 		rl.ToggleFullscreen()
 	}
 

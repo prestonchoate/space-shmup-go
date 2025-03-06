@@ -9,6 +9,8 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
+	events "github.com/prestonchoate/space-shmup/Systems/Events"
+	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 )
 
 var instance *SaveManager
@@ -121,7 +123,18 @@ func (sm *SaveManager) createDefaultSettings() bool {
 	return sm.saveSettings(sm.Data)
 }
 
+func (sm *SaveManager) UpdateSettings(settings *systems_data.GameSettings) {
+	// TODO: do some data validation on the settings before persisting
+	log.Printf("Save Manager: attempting to update settings:\n%+v\n", settings)
+	sm.Data.Settings = *settings
+	sm.saveSettings(sm.Data)
+	events.GetEventManagerInstance().Emit(events_data.GameSettingsUpdated, events_data.UpdateSettingsData{
+		NewSettings: sm.Data.Settings,
+	})
+}
+
 func (sm *SaveManager) saveSettings(settings SaveData) bool {
+	log.Printf("Save Manager: attempting to save data:\n%+v\n", settings)
 	data, err := json.Marshal(settings)
 
 	if err != nil {

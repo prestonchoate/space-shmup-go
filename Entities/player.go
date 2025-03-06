@@ -28,10 +28,10 @@ type Player struct {
 }
 
 func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.InputMap) *Player {
-	return &Player{
+	p := &Player{
 		id:      uuid.New(),
 		texture: *(tex),
-		speed:   2.5,
+		speed:   300,
 		origin:  rl.Vector2{X: 0.0, Y: 0.0},
 		srcRect: rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
 		destRect: rl.NewRectangle(float32(tex.Width),
@@ -48,6 +48,14 @@ func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.In
 		health:      100,
 		active:      true,
 		damageTicks: DEFAULT_DAMAGE_TICKS,
+	}
+	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, p.handleSettingsUpdate)
+	return p
+}
+
+func (p *Player) handleSettingsUpdate(event events.Event) {
+	if data, ok := event.Data.(events_data.UpdateSettingsData); ok {
+		p.keyMap = data.NewSettings.Keys
 	}
 }
 
@@ -80,7 +88,7 @@ func (p *Player) Draw() {
 	}
 }
 
-func (p *Player) Update() {
+func (p *Player) Update(delta float32) {
 	if !p.active {
 		return
 	}
@@ -99,10 +107,10 @@ func (p *Player) Update() {
 		}
 	}
 
-	p.handlePlayerInput()
+	p.handlePlayerInput(delta)
 	p.clampPlayerBounds()
 	for _, proj := range p.projPool.activePool {
-		proj.Update()
+		proj.Update(delta)
 		if proj.destRect.Y <= -(proj.destRect.Height) {
 			p.projPool.Return(proj)
 		}
@@ -117,23 +125,25 @@ func (p *Player) GetID() uuid.UUID {
 	return p.id
 }
 
-func (p *Player) handlePlayerInput() {
+// TODO: Refactor to include delta time and normalize the movement speed
+func (p *Player) handlePlayerInput(delta float32) {
 	if rl.IsKeyDown(p.keyMap.KeyLeft) {
-		p.destRect.X -= p.speed
+		p.destRect.X -= p.speed * delta
 	}
 
 	if rl.IsKeyDown(p.keyMap.KeyRight) {
-		p.destRect.X += p.speed
+		p.destRect.X += p.speed * delta
 	}
 
 	if rl.IsKeyDown(p.keyMap.KeyUp) {
-		p.destRect.Y -= p.speed
+		p.destRect.Y -= p.speed * delta
 	}
 
 	if rl.IsKeyDown(p.keyMap.KeyDown) {
-		p.destRect.Y += p.speed
+		p.destRect.Y += p.speed * delta
 	}
 
+	// change this back to isKeyPressed
 	if rl.IsKeyPressed(p.keyMap.KeyFire) {
 		p.fire()
 	}
@@ -166,6 +176,7 @@ func (p *Player) clampPlayerBounds() {
 	}
 }
 
+// TODO: Limit fire rate based on player stat
 func (p *Player) fire() {
 	proj := p.projPool.Get()
 	if proj.texture.ID == 0 {
@@ -221,7 +232,7 @@ func (p *Player) GetScore() int {
 func createProjectile() GameEntity {
 	frameCount := 3
 	scale := 3.0
-	speed := 7.5
+	speed := 750
 
 	return &Projectile{
 		id:         uuid.New(),

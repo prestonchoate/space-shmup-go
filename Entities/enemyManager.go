@@ -30,7 +30,7 @@ func (em *EnemyManager) Draw() {
 	}
 }
 
-func (em *EnemyManager) Update() {
+func (em *EnemyManager) Update(delta float32) {
 	if !em.active {
 		return
 	}
@@ -41,10 +41,10 @@ func (em *EnemyManager) Update() {
 			e.texture = em.enemyTextures[randIndex]
 			e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
 			startX := rl.GetRandomValue(e.texture.Width+10, int32(rl.GetScreenWidth())-e.texture.Width-10)
-			startY := rl.GetRandomValue(-300, -100) * int32(e.speed)
+			startY := rl.GetRandomValue(-300, -100)
 			e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width), float32(e.texture.Height))
 		}
-		e.Update()
+		e.Update(delta)
 	}
 }
 
@@ -53,7 +53,7 @@ func (em *EnemyManager) SpawnNewEnemies(level int) {
 	if len(em.enemies.activePool) < totalCount {
 		newSpawns := totalCount - len(em.enemies.activePool)
 		fmt.Printf("Spawning %d new enemies\n", newSpawns)
-		for i := 0; i < newSpawns; i++ {
+		for range newSpawns {
 			_ = em.enemies.Get()
 		}
 	}
@@ -68,10 +68,10 @@ func (em *EnemyManager) Activate(active bool) {
 }
 
 func (em *EnemyManager) DestroyEnemy(e *Enemy) {
-	e.destRect.Y = float32(rl.GetRandomValue(-300, -100)) * e.speed
+	e.destRect.Y = float32(rl.GetRandomValue(-300, -100))
 	e.score = int(rl.GetRandomValue(10, 250))
 	e.scoreTick = 120
-	e.speed = float32(rl.GetRandomValue(1.0, 4.0))
+	e.speed = float32(rl.GetRandomValue(200, 300))
 	em.enemies.Return(e)
 }
 
@@ -102,7 +102,7 @@ func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
 func createEnemy() GameEntity {
 	return &Enemy{
 		id:        uuid.New(),
-		speed:     float32(rl.GetRandomValue(1.0, 4.0)),
+		speed:     float32(rl.GetRandomValue(200, 300)),
 		score:     int(rl.GetRandomValue(10, 250)),
 		damage:    10,
 		scoreTick: 120,

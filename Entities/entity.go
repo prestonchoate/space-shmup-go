@@ -5,6 +5,6 @@ import "github.com/google/uuid"
 type GameEntity interface {
 	Activate(bool)
 	Draw()
-	Update()
+	Update(delta float32)
 	GetID() uuid.UUID
 }
