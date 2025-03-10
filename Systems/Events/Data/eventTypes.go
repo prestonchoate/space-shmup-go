@@ -5,4 +5,5 @@ type EventName string
 const (
 	ChangeGameState     EventName = "changeState"
 	GameSettingsUpdated EventName = "settingsUpdate"
+	ReturnGameState     EventName = "returnState"
 )

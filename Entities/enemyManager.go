@@ -6,6 +6,8 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 type EnemyManager struct {
@@ -41,7 +43,7 @@ func (em *EnemyManager) Update(delta float32) {
 			e.texture = em.enemyTextures[randIndex]
 			e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
 			startX := rl.GetRandomValue(e.texture.Width+10, int32(rl.GetScreenWidth())-e.texture.Width-10)
-			startY := rl.GetRandomValue(-300, -100)
+			startY := rl.GetRandomValue(-600, -100)
 			e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width), float32(e.texture.Height))
 		}
 		e.Update(delta)
@@ -72,6 +74,13 @@ func (em *EnemyManager) DestroyEnemy(e *Enemy) {
 	e.score = int(rl.GetRandomValue(10, 250))
 	e.scoreTick = 120
 	e.speed = float32(rl.GetRandomValue(200, 300))
+	sound, ok := assets.GetAssetManagerInstance().GetSound("assets/sfx/explosion.wav")
+	if ok {
+		rl.PlaySound(sound)
+		rl.SetSoundVolume(sound, saveManager.GetInstance().Data.Settings.SfxVolume)
+		pitchAdjustment := rand.Float32()
+		rl.SetSoundPitch(sound, 1+pitchAdjustment)
+	}
 	em.enemies.Return(e)
 }
 

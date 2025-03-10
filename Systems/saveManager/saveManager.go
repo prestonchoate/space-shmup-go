@@ -116,6 +116,8 @@ func (sm *SaveManager) createDefaultSettings() bool {
 			KeyDown:  rl.KeyS,
 			KeyFire:  rl.KeySpace,
 		},
+		MusicVolume: 0.5,
+		SfxVolume:   0.5,
 	}
 
 	sm.Data.Settings = settings
@@ -125,6 +127,22 @@ func (sm *SaveManager) createDefaultSettings() bool {
 
 func (sm *SaveManager) UpdateSettings(settings *systems_data.GameSettings) {
 	// TODO: do some data validation on the settings before persisting
+	if settings.MusicVolume > 1.0 {
+		settings.MusicVolume = 1.0
+	}
+
+	if settings.SfxVolume > 1.0 {
+		settings.SfxVolume = 1.0
+	}
+
+	if settings.MusicVolume < 0.0 {
+		settings.MusicVolume = 0.0
+	}
+
+	if settings.SfxVolume < 0.0 {
+		settings.SfxVolume = 0.0
+	}
+
 	log.Printf("Save Manager: attempting to update settings:\n%+v\n", settings)
 	sm.Data.Settings = *settings
 	sm.saveSettings(sm.Data)

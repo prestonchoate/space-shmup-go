@@ -97,6 +97,13 @@ func (u *UIManager) Update(update UIUpdate) {
 					NewState: systems_data.Exit,
 				})
 			}
+			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
+			if exists && settingsButtonPressed {
+				screenState["settingsButtonPressed"] = false
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Settings,
+				})
+			}
 			break
 		case systems_data.GameOver:
 			restartButtonPressed, exists := screenState["restartButtonPressed"].(bool)
@@ -118,9 +125,7 @@ func (u *UIManager) Update(update UIUpdate) {
 			backButtonPressed, exists := screenState["back"].(bool)
 			if exists && backButtonPressed {
 				screenState["back"] = false
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Start,
-				})
+				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
 			}
 			saveButtonPressed, exists := screenState["save"].(bool)
 			if exists && saveButtonPressed {
@@ -129,9 +134,7 @@ func (u *UIManager) Update(update UIUpdate) {
 				if exists {
 					saveManager.GetInstance().UpdateSettings(settings)
 				}
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Start,
-				})
+				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
 			}
 			break
 		default:

@@ -19,6 +19,7 @@ func main() {
 	rl.SetTraceLogLevel(rl.LogError)
 
 	rl.InitAudioDevice()
+	rl.SetAudioStreamBufferSizeDefault(16384)
 	defer rl.CloseAudioDevice()
 
 	rl.InitWindow(int32(sm.Data.Settings.ScreenWidth), int32(sm.Data.Settings.ScreenHeight), "Space Shoot Em Up - Raylib Go")

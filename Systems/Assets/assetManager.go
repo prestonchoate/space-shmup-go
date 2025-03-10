@@ -18,6 +18,7 @@ var instance *AssetManager
 type AssetManager struct {
 	textures map[string]rl.Texture2D
 	sounds   map[string]rl.Sound
+	music    map[string]rl.Music
 	fs       embed.FS
 }
 
@@ -25,6 +26,8 @@ func GetAssetManagerInstance() *AssetManager {
 	if instance == nil {
 		instance = &AssetManager{
 			textures: map[string]rl.Texture2D{},
+			sounds:   map[string]rl.Sound{},
+			music:    map[string]rl.Music{},
 		}
 	}
 
@@ -68,11 +71,24 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 			return nil
 		}
 
-		if slices.Contains(soundExts, ext) {
+		// TODO: Figure out why loading the music as rl.Music causes a crash for now load them as SFX
+		isMusic := strings.Index(path, "assets/music") > -1
+		isSfx := strings.Index(path, "assets/sfx") > -1 || true
+
+		if isSfx && slices.Contains(soundExts, ext) {
 			if sound, err := am.loadSoundFromEmbed(path, ext); err == nil {
 				am.sounds[path] = sound
 			} else {
 				log.Printf("Skipping non-sound asset: %s, error: %v\n", path, err)
+			}
+			return nil
+		}
+
+		if isMusic && slices.Contains(soundExts, ext) {
+			if music, err := am.loadMusicFromEmbed(path, ext); err == nil {
+				am.music[path] = music
+			} else {
+				log.Printf("Skipping non-music asset: %s, error: %v\n", path, err)
 			}
 			return nil
 		}
@@ -125,6 +141,20 @@ func (am *AssetManager) loadSoundFromEmbed(path string, fileType string) (rl.Sou
 	return sound, nil
 }
 
+func (am *AssetManager) loadMusicFromEmbed(path string, fileType string) (rl.Music, error) {
+	data, err := am.fs.ReadFile(path)
+	if err != nil {
+		return rl.Music{}, fmt.Errorf("Failed to read embedded asset: %s", err)
+	}
+
+	stream := rl.LoadMusicStreamFromMemory(fileType, data, int32(len(data)))
+	if stream.Stream.SampleRate <= 0 {
+		return rl.Music{}, fmt.Errorf("failed to load music stream from path: %s", path)
+	}
+
+	return stream, nil
+}
+
 // GetTexture retrieves a texture by file path.
 func (am *AssetManager) GetTexture(path string) (rl.Texture2D, bool) {
 	texture, found := am.textures[path]
@@ -134,6 +164,11 @@ func (am *AssetManager) GetTexture(path string) (rl.Texture2D, bool) {
 func (am *AssetManager) GetSound(path string) (rl.Sound, bool) {
 	sound, found := am.sounds[path]
 	return sound, found
+}
+
+func (am *AssetManager) GetMusic(path string) (*rl.Music, bool) {
+	music, found := am.music[path]
+	return &music, found
 }
 
 // UnloadTextures releases all textures.

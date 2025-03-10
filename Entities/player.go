@@ -1,14 +1,20 @@
 package entities
 
 import (
+	"fmt"
+	"math/rand"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 const DEFAULT_DAMAGE_TICKS = 15
+const DEFAULT_FIRE_RATE = 35
 
 type Player struct {
 	id          uuid.UUID
@@ -25,13 +31,15 @@ type Player struct {
 	active      bool
 	damaged     bool
 	damageTicks int
+	fireRate    float32
+	fireDelay   float32
 }
 
 func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.InputMap) *Player {
 	p := &Player{
 		id:      uuid.New(),
 		texture: *(tex),
-		speed:   300,
+		speed:   350,
 		origin:  rl.Vector2{X: 0.0, Y: 0.0},
 		srcRect: rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
 		destRect: rl.NewRectangle(float32(tex.Width),
@@ -48,6 +56,7 @@ func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.In
 		health:      100,
 		active:      true,
 		damageTicks: DEFAULT_DAMAGE_TICKS,
+		fireRate:    DEFAULT_FIRE_RATE,
 	}
 	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, p.handleSettingsUpdate)
 	return p
@@ -77,6 +86,9 @@ func (p *Player) Draw() {
 	if p.health <= 0 {
 		return
 	}
+
+	rl.DrawText(fmt.Sprint("Fire Rate: ", p.fireRate), 10, 30, 10, rl.Blue)
+
 	tint := rl.White
 	if p.damaged {
 		tint = rl.Red
@@ -106,6 +118,8 @@ func (p *Player) Update(delta float32) {
 			p.damageTicks = DEFAULT_DAMAGE_TICKS
 		}
 	}
+
+	p.fireDelay += delta * p.fireRate
 
 	p.handlePlayerInput(delta)
 	p.clampPlayerBounds()
@@ -143,8 +157,7 @@ func (p *Player) handlePlayerInput(delta float32) {
 		p.destRect.Y += p.speed * delta
 	}
 
-	// change this back to isKeyPressed
-	if rl.IsKeyPressed(p.keyMap.KeyFire) {
+	if rl.IsKeyDown(p.keyMap.KeyFire) {
 		p.fire()
 	}
 
@@ -178,6 +191,10 @@ func (p *Player) clampPlayerBounds() {
 
 // TODO: Limit fire rate based on player stat
 func (p *Player) fire() {
+	if p.fireDelay < 10 {
+		return
+	}
+
 	proj := p.projPool.Get()
 	if proj.texture.ID == 0 {
 		proj.texture = p.projTex
@@ -187,6 +204,15 @@ func (p *Player) fire() {
 	}
 	proj.destRect.X = p.destRect.X + (float32(p.texture.Width) / 3.75)
 	proj.destRect.Y = p.destRect.Y
+	sound, ok := assets.GetAssetManagerInstance().GetSound("assets/sfx/laser.wav")
+	if ok {
+		sfxVolume := saveManager.GetInstance().Data.Settings.SfxVolume
+		rl.PlaySound(sound)
+		rl.SetSoundVolume(sound, sfxVolume)
+		pitchAdj := rand.Float32() / 2
+		rl.SetSoundPitch(sound, 1+pitchAdj)
+	}
+	p.fireDelay = 0.0
 }
 
 func (p *Player) TakeDamage(dmg int) {

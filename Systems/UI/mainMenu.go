@@ -37,7 +37,7 @@ func (m *MainMenuScreen) Draw() {
 		int32(rl.GetScreenWidth()/2)-rl.MeasureText(mainText, 60)/2,
 		int32(rl.GetScreenHeight()/2),
 		60,
-		rl.White,
+		rl.NewColor(81, 191, 211, 255),
 	)
 
 	m.ScreenState["startButtonPressed"] = raygui.Button(rl.Rectangle{

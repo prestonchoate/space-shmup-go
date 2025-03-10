@@ -72,7 +72,8 @@ func (s *SettingsScreen) Draw() {
 	labelOffset := int32(screenWidth / 15)
 	startX -= (buttonWidth + labelOffset) / 2
 
-	raygui.Label(rl.Rectangle{X: float32(startX + (buttonWidth+labelOffset)/2), Y: float32(screenHeight / 4), Width: float32(buttonWidth+labelOffset) * 2, Height: float32(buttonHeight) * 2}, "SETTINGS")
+	headerWidth := rl.MeasureText("SETTINGS", 60)
+	rl.DrawText("SETTINGS", int32(startX+(headerWidth)/2), int32(screenHeight/4), 60, rl.NewColor(81, 191, 211, 255))
 
 	// I don't love this but it prevents multiple button presses when the drop down is active
 	if !s.resolutionActive {
@@ -132,11 +133,39 @@ func (s *SettingsScreen) Draw() {
 			}
 		}
 
+		raygui.Label(rl.Rectangle{
+			X:      float32(startX),
+			Y:      float32(startY + (buttonHeight * 9) + (vSpace * 2)),
+			Width:  float32(labelOffset),
+			Height: float32(buttonHeight),
+		}, "Music Volume:")
+
+		s.settings.MusicVolume = raygui.SliderBar(rl.Rectangle{
+			X:      float32(startX + labelOffset),
+			Y:      float32(startY + (buttonHeight * 9) + (vSpace * 2)),
+			Width:  float32(buttonWidth),
+			Height: float32(buttonHeight),
+		}, "0", "100", s.settings.MusicVolume, 0.0, 1.0)
+
+		raygui.Label(rl.Rectangle{
+			X:      float32(startX),
+			Y:      float32(startY + (buttonHeight * 10) + (vSpace * 3)),
+			Width:  float32(labelOffset),
+			Height: float32(buttonHeight),
+		}, "SFX Volume:")
+
+		s.settings.SfxVolume = raygui.SliderBar(rl.Rectangle{
+			X:      float32(startX + labelOffset),
+			Y:      float32(startY + (buttonHeight * 10) + (vSpace * 3)),
+			Width:  float32(buttonWidth),
+			Height: float32(buttonHeight),
+		}, "0", "100", s.settings.SfxVolume, 0.0, 1.0)
+
 		// Save & Back Buttons
-		if raygui.Button(rl.Rectangle{X: float32((startX) + ((buttonWidth + labelOffset) / 2) - 160), Y: float32(startY + (buttonHeight * 10) + vSpace), Width: 140, Height: float32(buttonHeight)}, "Back") {
+		if raygui.Button(rl.Rectangle{X: float32(startX + ((buttonWidth + labelOffset/2) / 2) - 80), Y: float32(startY + (buttonHeight * 13) + vSpace), Width: 140, Height: float32(buttonHeight)}, "Back") {
 			s.ScreenState["back"] = true
 		}
-		if raygui.Button(rl.Rectangle{X: float32(startX + ((buttonWidth + labelOffset) / 2) + 160), Y: float32(startY + (buttonHeight * 10) + vSpace), Width: 140, Height: float32(buttonHeight)}, "Save") {
+		if raygui.Button(rl.Rectangle{X: float32(startX + ((buttonWidth + labelOffset/2) / 2) + 80), Y: float32(startY + (buttonHeight * 13) + vSpace), Width: 140, Height: float32(buttonHeight)}, "Save") {
 			s.ScreenState["save"] = true
 		}
 	}

@@ -11,3 +11,5 @@ type ChangeStateData struct {
 type UpdateSettingsData struct {
 	NewSettings systems_data.GameSettings
 }
+
+type ReturnStateData struct{}
