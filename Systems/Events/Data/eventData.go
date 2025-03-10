@@ -7,3 +7,9 @@ import (
 type ChangeStateData struct {
 	NewState systems_data.GameState
 }
+
+type UpdateSettingsData struct {
+	NewSettings systems_data.GameSettings
+}
+
+type ReturnStateData struct{}

@@ -24,21 +24,21 @@ func (e *Enemy) Draw() {
 	rl.DrawTexturePro(e.texture, e.srcRect, e.destRect, e.origin, 0, rl.White)
 }
 
-func (e *Enemy) Update() {
+func (e *Enemy) Update(delta float32) {
 	e.prevX = e.destRect.X
 	if e.targetX == 0.0 {
 		e.targetX = float32(rl.GetRandomValue(0, int32(rl.GetScreenWidth())))
 	}
 
 	if e.destRect.X < e.targetX {
-		e.destRect.X = e.destRect.X + e.speed
+		e.destRect.X = e.destRect.X + e.speed*delta
 	}
 
 	if e.destRect.X > e.targetX {
-		e.destRect.X = e.destRect.X - e.speed
+		e.destRect.X = e.destRect.X - e.speed*delta
 	}
 
-	e.destRect.Y = e.destRect.Y + e.speed
+	e.destRect.Y = e.destRect.Y + e.speed*delta
 
 	if e.destRect.Y >= float32(rl.GetScreenHeight()) {
 		startY := rl.GetRandomValue(-300, -100)
@@ -60,7 +60,7 @@ func (e *Enemy) Update() {
 	}
 
 	if e.prevX == e.destRect.X { // enemy is stuck
-		e.destRect.X += float32(rl.GetRandomValue(-1, 1) * int32(e.speed))
+		//e.destRect.X += float32(rl.GetRandomValue(-1, 1) * int32(e.speed))
 		e.targetX = float32(rl.GetRandomValue(e.texture.Width, int32(rl.GetScreenWidth())-e.texture.Width))
 	}
 

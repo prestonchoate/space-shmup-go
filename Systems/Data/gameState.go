@@ -3,7 +3,9 @@ package systems_data
 type GameState int
 
 const (
-	Start GameState = iota
+	None GameState = iota
+	Start
+	Settings
 	Loading
 	Paused
 	Playing

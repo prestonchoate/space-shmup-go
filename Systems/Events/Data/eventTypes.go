@@ -3,5 +3,7 @@ package events_data
 type EventName string
 
 const (
-	ChangeGameState EventName = "changeState"
+	ChangeGameState     EventName = "changeState"
+	GameSettingsUpdated EventName = "settingsUpdate"
+	ReturnGameState     EventName = "returnState"
 )

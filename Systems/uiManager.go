@@ -5,6 +5,7 @@ import (
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 	ui "github.com/prestonchoate/space-shmup/Systems/UI"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 type UIManager struct {
@@ -34,6 +35,10 @@ func CreateUIManager() *UIManager {
 	}
 
 	screens[systems_data.GameOver] = &ui.GameOverScreen{
+		ScreenState: make(map[string]any),
+	}
+
+	screens[systems_data.Settings] = &ui.SettingsScreen{
 		ScreenState: make(map[string]any),
 	}
 
@@ -76,6 +81,12 @@ func (u *UIManager) Update(update UIUpdate) {
 					NewState: systems_data.Exit,
 				})
 			}
+			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
+			if exists && settingsButtonPressed {
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Settings,
+				})
+			}
 			break
 		case systems_data.Playing:
 			break
@@ -84,6 +95,13 @@ func (u *UIManager) Update(update UIUpdate) {
 			if exists && exitButtonPressed {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Exit,
+				})
+			}
+			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
+			if exists && settingsButtonPressed {
+				screenState["settingsButtonPressed"] = false
+				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+					NewState: systems_data.Settings,
 				})
 			}
 			break
@@ -101,6 +119,22 @@ func (u *UIManager) Update(update UIUpdate) {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Exit,
 				})
+			}
+			break
+		case systems_data.Settings:
+			backButtonPressed, exists := screenState["back"].(bool)
+			if exists && backButtonPressed {
+				screenState["back"] = false
+				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
+			}
+			saveButtonPressed, exists := screenState["save"].(bool)
+			if exists && saveButtonPressed {
+				screenState["save"] = false
+				settings, exists := screenState["settings"].(*systems_data.GameSettings)
+				if exists {
+					saveManager.GetInstance().UpdateSettings(settings)
+				}
+				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
 			}
 			break
 		default:

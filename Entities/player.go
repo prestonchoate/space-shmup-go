@@ -1,22 +1,20 @@
 package entities
 
 import (
+	"fmt"
+	"math/rand"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 const DEFAULT_DAMAGE_TICKS = 15
-
-type InputMap struct {
-	KeyLeft  int32
-	KeyRight int32
-	KeyUp    int32
-	KeyDown  int32
-	KeyFire  int32
-}
+const DEFAULT_FIRE_RATE = 35
 
 type Player struct {
 	id          uuid.UUID
@@ -25,7 +23,7 @@ type Player struct {
 	origin      rl.Vector2
 	srcRect     rl.Rectangle
 	destRect    rl.Rectangle
-	keyMap      InputMap
+	keyMap      systems_data.InputMap
 	projPool    ObjectPool[*Projectile]
 	projTex     rl.Texture2D
 	health      int
@@ -33,13 +31,15 @@ type Player struct {
 	active      bool
 	damaged     bool
 	damageTicks int
+	fireRate    float32
+	fireDelay   float32
 }
 
-func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys InputMap) *Player {
-	return &Player{
+func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.InputMap) *Player {
+	p := &Player{
 		id:      uuid.New(),
 		texture: *(tex),
-		speed:   2.5,
+		speed:   350,
 		origin:  rl.Vector2{X: 0.0, Y: 0.0},
 		srcRect: rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
 		destRect: rl.NewRectangle(float32(tex.Width),
@@ -56,6 +56,15 @@ func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys InputMap) *Play
 		health:      100,
 		active:      true,
 		damageTicks: DEFAULT_DAMAGE_TICKS,
+		fireRate:    DEFAULT_FIRE_RATE,
+	}
+	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, p.handleSettingsUpdate)
+	return p
+}
+
+func (p *Player) handleSettingsUpdate(event events.Event) {
+	if data, ok := event.Data.(events_data.UpdateSettingsData); ok {
+		p.keyMap = data.NewSettings.Keys
 	}
 }
 
@@ -77,6 +86,9 @@ func (p *Player) Draw() {
 	if p.health <= 0 {
 		return
 	}
+
+	rl.DrawText(fmt.Sprint("Fire Rate: ", p.fireRate), 10, 30, 10, rl.Blue)
+
 	tint := rl.White
 	if p.damaged {
 		tint = rl.Red
@@ -88,7 +100,7 @@ func (p *Player) Draw() {
 	}
 }
 
-func (p *Player) Update() {
+func (p *Player) Update(delta float32) {
 	if !p.active {
 		return
 	}
@@ -107,10 +119,12 @@ func (p *Player) Update() {
 		}
 	}
 
-	p.handlePlayerInput()
+	p.fireDelay += delta * p.fireRate
+
+	p.handlePlayerInput(delta)
 	p.clampPlayerBounds()
 	for _, proj := range p.projPool.activePool {
-		proj.Update()
+		proj.Update(delta)
 		if proj.destRect.Y <= -(proj.destRect.Height) {
 			p.projPool.Return(proj)
 		}
@@ -125,24 +139,25 @@ func (p *Player) GetID() uuid.UUID {
 	return p.id
 }
 
-func (p *Player) handlePlayerInput() {
+// TODO: Refactor to include delta time and normalize the movement speed
+func (p *Player) handlePlayerInput(delta float32) {
 	if rl.IsKeyDown(p.keyMap.KeyLeft) {
-		p.destRect.X -= p.speed
+		p.destRect.X -= p.speed * delta
 	}
 
 	if rl.IsKeyDown(p.keyMap.KeyRight) {
-		p.destRect.X += p.speed
+		p.destRect.X += p.speed * delta
 	}
 
 	if rl.IsKeyDown(p.keyMap.KeyUp) {
-		p.destRect.Y -= p.speed
+		p.destRect.Y -= p.speed * delta
 	}
 
 	if rl.IsKeyDown(p.keyMap.KeyDown) {
-		p.destRect.Y += p.speed
+		p.destRect.Y += p.speed * delta
 	}
 
-	if rl.IsKeyPressed(p.keyMap.KeyFire) {
+	if rl.IsKeyDown(p.keyMap.KeyFire) {
 		p.fire()
 	}
 
@@ -174,7 +189,12 @@ func (p *Player) clampPlayerBounds() {
 	}
 }
 
+// TODO: Limit fire rate based on player stat
 func (p *Player) fire() {
+	if p.fireDelay < 10 {
+		return
+	}
+
 	proj := p.projPool.Get()
 	if proj.texture.ID == 0 {
 		proj.texture = p.projTex
@@ -184,6 +204,15 @@ func (p *Player) fire() {
 	}
 	proj.destRect.X = p.destRect.X + (float32(p.texture.Width) / 3.75)
 	proj.destRect.Y = p.destRect.Y
+	sound, ok := assets.GetAssetManagerInstance().GetSound("assets/sfx/laser.wav")
+	if ok {
+		sfxVolume := saveManager.GetInstance().Data.Settings.SfxVolume
+		rl.PlaySound(sound)
+		rl.SetSoundVolume(sound, sfxVolume)
+		pitchAdj := rand.Float32() / 2
+		rl.SetSoundPitch(sound, 1+pitchAdj)
+	}
+	p.fireDelay = 0.0
 }
 
 func (p *Player) TakeDamage(dmg int) {
@@ -229,7 +258,7 @@ func (p *Player) GetScore() int {
 func createProjectile() GameEntity {
 	frameCount := 3
 	scale := 3.0
-	speed := 7.5
+	speed := 750
 
 	return &Projectile{
 		id:         uuid.New(),

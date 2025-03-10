@@ -11,8 +11,11 @@ type PausedScreen struct {
 
 // Draw implements Screens.
 func (p *PausedScreen) Draw() {
+	spacing := float32(10)
+	buttonWidth := float32(rl.GetScreenWidth() / 15)
+	startX := ((float32(rl.GetScreenWidth())) / 2) - buttonWidth - spacing
 	exitButtonText := "QUIT"
-	buttonWidth := rl.MeasureText(exitButtonText, 40)
+	settingsButtonText := "SETTINGS"
 	buttonHeight := 80
 
 	rl.DrawText(
@@ -23,8 +26,15 @@ func (p *PausedScreen) Draw() {
 		rl.Gray,
 	)
 
+	p.ScreenState["settingsButtonPressed"] = raygui.Button(rl.Rectangle{
+		X:      startX,
+		Y:      float32((rl.GetScreenHeight() / 4) * 3),
+		Width:  float32(buttonWidth),
+		Height: float32(buttonHeight),
+	}, settingsButtonText)
+
 	p.ScreenState["exitButtonPressed"] = raygui.Button(rl.Rectangle{
-		X:      float32(rl.GetScreenWidth()-int(buttonWidth)) / 2,
+		X:      startX + buttonWidth + float32(spacing),
 		Y:      float32((rl.GetScreenHeight() / 4) * 3),
 		Width:  float32(buttonWidth),
 		Height: float32(buttonHeight),

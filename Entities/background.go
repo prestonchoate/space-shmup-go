@@ -1,8 +1,12 @@
 package entities
 
 import (
+	"log"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 type Background struct {
@@ -13,22 +17,32 @@ type Background struct {
 	origin   rl.Vector2
 }
 
-func CreateBackground(tex *rl.Texture2D, width float32, height float32) *Background {
-	return &Background{
+func CreateBackground() *Background {
+	am := assets.GetAssetManagerInstance()
+	sm := saveManager.GetInstance()
+	bt, ok := am.GetTexture("assets/sprites/backgrounds/background.jpg")
+	if !ok {
+		log.Fatal("Background textrue not available in asset manager")
+	}
+	bg := &Background{
 		id:       uuid.New(),
-		texture:  *(tex),
-		srcRect:  rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
-		destRect: rl.NewRectangle(0.0, 0.0, width, height),
+		texture:  bt,
+		srcRect:  rl.NewRectangle(0.0, 0.0, float32(bt.Width), float32(bt.Height)),
+		destRect: rl.NewRectangle(0.0, 0.0, float32(sm.Data.Settings.ScreenWidth), float32(sm.Data.Settings.ScreenHeight)),
 	}
 
+	return bg
 }
 
 func (bg *Background) Draw() {
 	rl.DrawTexturePro(bg.texture, bg.srcRect, bg.destRect, bg.origin, 0, rl.White)
 }
 
-func (bg *Background) Update() {
-	bg.srcRect.Y -= 1
+func (bg *Background) Update(delta float32) {
+	settings := saveManager.GetInstance().Data.Settings
+	bg.destRect.Width = float32(settings.ScreenWidth)
+	bg.destRect.Height = float32(settings.ScreenHeight)
+	bg.srcRect.Y -= 100 * delta
 }
 
 func (bg *Background) GetID() uuid.UUID {

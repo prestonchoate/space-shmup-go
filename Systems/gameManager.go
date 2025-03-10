@@ -6,9 +6,11 @@ import (
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	entities "github.com/prestonchoate/space-shmup/Entities"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
+	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 var PlayerTexture rl.Texture2D
@@ -16,14 +18,6 @@ var BackgroundTexture rl.Texture2D
 var ProjectileTexture rl.Texture2D
 var EnemyTextures []rl.Texture2D
 var gameManagerInstance *GameManager
-
-type GameSettings struct {
-	targetFPS    int32
-	screenWidth  int
-	screenHeight int
-	fullscreen   bool
-	keys         entities.InputMap
-}
 
 type GameManager struct {
 	entities        []entities.GameEntity
@@ -35,9 +29,11 @@ type GameManager struct {
 	uiSystem        *UIManager
 	collisionSystem *CollisionManager
 	assetsLoaded    bool
-	currentSettings GameSettings
+	currentSettings systems_data.GameSettings
 	Player          *entities.Player
 	EnemyManager    *entities.EnemyManager
+	backgroundMusic *rl.Sound // TODO: Change this to rl.Music when the audio issue is resolved
+	returnState     systems_data.GameState
 }
 
 func GetGameMangerInstance() *GameManager {
@@ -49,6 +45,16 @@ func GetGameMangerInstance() *GameManager {
 }
 
 func (gm *GameManager) Update() {
+
+	dt := rl.GetFrameTime()
+
+	//rl.UpdateMusicStream(*gm.backgroundMusic)
+
+	if !rl.IsSoundPlaying(*gm.backgroundMusic) {
+		rl.PlaySound(*gm.backgroundMusic)
+		rl.SetSoundVolume(*gm.backgroundMusic, gm.currentSettings.MusicVolume)
+	}
+
 	gm.handleButtonInputs()
 	if gm.state == systems_data.Playing && gm.assetsLoaded == false {
 		gm.GameSetup()
@@ -56,7 +62,7 @@ func (gm *GameManager) Update() {
 
 	for _, entity := range gm.entities {
 		entity.Activate(gm.state == systems_data.Playing)
-		entity.Update()
+		entity.Update(dt)
 	}
 
 	// TODO: Handle this in EnemyManager and emit an event when all enemies are cleared
@@ -102,7 +108,7 @@ func (gm *GameManager) handleButtonInputs() {
 }
 
 func (gm *GameManager) Reset() {
-	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.Keys)
 	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
 	gm.collisionSystem.player = gm.Player
 	gm.collisionSystem.enemyManager = gm.EnemyManager
@@ -121,8 +127,7 @@ func (gm *GameManager) GameSetup() {
 	}
 
 	gm.entities = []entities.GameEntity{}
-	bg := entities.CreateBackground(&BackgroundTexture, float32(gm.windowWidth), float32(gm.windowHeight))
-	gm.entities = append(gm.entities, bg)
+	gm.entities = append(gm.entities, entities.CreateBackground())
 	gm.entities = append(gm.entities, gm.Player)
 	gm.entities = append(gm.entities, gm.EnemyManager)
 
@@ -132,30 +137,24 @@ func (gm *GameManager) GameSetup() {
 
 func (gm *GameManager) loadAssets() {
 	// TODO: allow all entities to grab their own textures from the AssetManager so that there is a single place to manage that entity's data
-	am := GetAssetManagerInstance()
+	am := assets.GetAssetManagerInstance()
 
-	pt, ok := am.GetTexture("assets/player/1B.png")
+	pt, ok := am.GetTexture("assets/sprites/player/1B.png")
 	if !ok {
 		log.Fatal("Player texture not available in asset manager")
 	}
 
-	bt, ok := am.GetTexture("assets/background.jpg")
-	if !ok {
-		log.Fatal("Background textrue not available in asset manager")
-	}
-
-	projTex, ok := am.GetTexture("assets/projectile/rocket.png")
+	projTex, ok := am.GetTexture("assets/sprites/projectile/rocket.png")
 	if !ok {
 		log.Fatal("Projectile texture not available in asset manager")
 	}
 
-	et, ok := am.GetTexture("assets/enemies/Emissary.png")
+	et, ok := am.GetTexture("assets/sprites/enemies/Emissary.png")
 	if !ok {
 		log.Fatal("Enemy texture not available in asset manager")
 	}
 
 	PlayerTexture = pt
-	BackgroundTexture = bt
 	ProjectileTexture = projTex
 
 	EnemyTextures = append(EnemyTextures, et)
@@ -165,34 +164,39 @@ func (gm *GameManager) loadAssets() {
 
 func createGameManager() *GameManager {
 	gm := &GameManager{
+		state:    systems_data.Start,
 		entities: []entities.GameEntity{},
 	}
 	gm.loadAssets()
 	gm.assetsLoaded = true
+	bg := entities.CreateBackground()
+	gm.entities = append(gm.entities, bg)
+	bgMusic, ok := assets.GetAssetManagerInstance().GetSound("assets/music/deep-space-barrier-121195.ogg")
+	if ok {
+		gm.backgroundMusic = &bgMusic
+		//gm.backgroundMusic.Looping = true
+		//gm.backgroundMusic.Stream.SampleRate = 44100
+		//rl.PlayMusicStream(*gm.backgroundMusic)
 
-	settings := GameSettings{
-		targetFPS:    120,
-		screenWidth:  rl.GetScreenWidth(),
-		screenHeight: rl.GetScreenHeight(),
-		fullscreen:   false,
-		keys: entities.InputMap{
-			KeyLeft:  rl.KeyA,
-			KeyUp:    rl.KeyW,
-			KeyRight: rl.KeyD,
-			KeyDown:  rl.KeyS,
-			KeyFire:  rl.KeySpace,
-		},
+		rl.PlaySound(*gm.backgroundMusic)
+
+	} else {
+		log.Println("Game Manager: Failed to load bg music from asset manager")
 	}
 
-	gm.currentSettings = settings
+	gm.currentSettings = saveManager.GetInstance().Data.Settings
 
-	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.keys)
+	rl.SetSoundVolume(*gm.backgroundMusic, gm.currentSettings.MusicVolume)
+
+	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.Keys)
 	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
 
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager()
 
-	events.GetEventManagerInstance().Subscribe("changeState", gm.handleChangeStateEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.ChangeGameState, gm.handleChangeStateEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, gm.handleUpdatedSettings)
+	events.GetEventManagerInstance().Subscribe(events_data.ReturnGameState, gm.handleReturnStateEvent)
 	return gm
 }
 
@@ -203,11 +207,36 @@ func (gm *GameManager) ShouldExit() bool {
 func (gm *GameManager) handleChangeStateEvent(e events.Event) {
 	if data, ok := e.Data.(events_data.ChangeStateData); ok {
 		fmt.Println("Processing change state event. Changing to: ", data.NewState)
+		gm.returnState = gm.state
 		gm.state = data.NewState
 		if gm.state == systems_data.Playing {
 			gm.GameSetup()
 		} else if gm.state == systems_data.Restart {
 			gm.Reset()
 		}
+	}
+}
+
+func (gm *GameManager) handleReturnStateEvent(e events.Event) {
+	if gm.returnState == systems_data.None {
+		return
+	}
+	gm.state = gm.returnState
+	gm.returnState = systems_data.None
+}
+
+func (gm *GameManager) handleUpdatedSettings(e events.Event) {
+	if data, ok := e.Data.(events_data.UpdateSettingsData); ok {
+		fmt.Println("Game Manager: Updating settings")
+		gm.currentSettings = data.NewSettings
+		rl.SetTargetFPS(data.NewSettings.TargetFPS)
+		if rl.IsWindowFullscreen() != data.NewSettings.Fullscreen {
+			rl.ToggleFullscreen()
+		}
+		if !rl.IsWindowFullscreen() {
+			rl.SetWindowSize(data.NewSettings.ScreenWidth, data.NewSettings.ScreenHeight)
+		}
+
+		rl.SetSoundVolume(*gm.backgroundMusic, data.NewSettings.MusicVolume)
 	}
 }
