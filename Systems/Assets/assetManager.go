@@ -34,6 +34,10 @@ func GetAssetManagerInstance() *AssetManager {
 	return instance
 }
 
+func (am *AssetManager) ReloadAssets() {
+	am.LoadAssets(am.fs)
+}
+
 func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 	soundExts := []string{".mp3", ".ogg", ".wav"}
 	texExts := []string{".jpg", ".jpeg", ".png"}
@@ -172,8 +176,9 @@ func (am *AssetManager) GetMusic(path string) (*rl.Music, bool) {
 func (am *AssetManager) UnloadTextures() {
 	hasSounds := am.sounds != nil
 	hasTextures := am.textures != nil
+	hasMusic := am.music != nil
 
-	if !hasSounds && !hasTextures {
+	if !hasSounds && !hasTextures && !hasMusic {
 		return
 	}
 
@@ -189,6 +194,13 @@ func (am *AssetManager) UnloadTextures() {
 		}
 	}
 
+	if hasMusic {
+		for _, music := range am.music {
+			rl.UnloadMusicStream(music)
+		}
+	}
+
 	am.textures = nil
 	am.sounds = nil
+	am.music = nil
 }

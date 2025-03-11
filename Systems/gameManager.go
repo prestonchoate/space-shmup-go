@@ -234,6 +234,8 @@ func (gm *GameManager) handleUpdatedSettings(e events.Event) {
 		}
 		if !rl.IsWindowFullscreen() {
 			rl.SetWindowSize(data.NewSettings.ScreenWidth, data.NewSettings.ScreenHeight)
+		} else {
+			rl.SetWindowSize(rl.GetMonitorWidth(rl.GetCurrentMonitor()), rl.GetMonitorHeight(rl.GetCurrentMonitor()))
 		}
 
 		rl.SetSoundVolume(*gm.backgroundMusic, data.NewSettings.MusicVolume)

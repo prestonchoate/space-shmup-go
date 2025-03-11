@@ -12,7 +12,7 @@ type MainMenuScreen struct {
 }
 
 func (m *MainMenuScreen) Update(state map[string]any) {
-
+	m.ScreenState["screenSize"] = rl.Vector2{X: float32(rl.GetScreenWidth()), Y: float32(rl.GetScreenHeight())}
 }
 
 func (m *MainMenuScreen) Draw() {
@@ -23,8 +23,16 @@ func (m *MainMenuScreen) Draw() {
 
 	buttonWidth := rl.MeasureText(settingsButtonText, 40)
 	buttonHeight := 80
-	screenWidth := rl.GetScreenWidth()
-	screenHeight := rl.GetScreenHeight()
+	screenSize, ok := m.ScreenState["screnSize"].(rl.Vector2)
+	var screenWidth int
+	var screenHeight int
+	if !ok {
+		screenWidth = rl.GetScreenWidth()
+		screenHeight = rl.GetScreenHeight()
+	} else {
+		screenWidth = int(screenSize.X)
+		screenHeight = int(screenSize.Y)
+	}
 
 	spacing := int32(20)
 	totalWidth := (3 * buttonWidth) + (2 * spacing)
@@ -34,8 +42,8 @@ func (m *MainMenuScreen) Draw() {
 	mainText := fmt.Sprintf("%v", "UNTITLED SPACE SHOOTER")
 	rl.DrawText(
 		mainText,
-		int32(rl.GetScreenWidth()/2)-rl.MeasureText(mainText, 60)/2,
-		int32(rl.GetScreenHeight()/2),
+		int32(screenWidth/2)-rl.MeasureText(mainText, 60)/2,
+		int32(screenHeight/2),
 		60,
 		rl.NewColor(81, 191, 211, 255),
 	)

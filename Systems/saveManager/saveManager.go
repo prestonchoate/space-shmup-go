@@ -105,9 +105,9 @@ func (sm *SaveManager) loadData() bool {
 func (sm *SaveManager) createDefaultSettings() bool {
 	settings := systems_data.GameSettings{
 		TargetFPS:    120,
-		ScreenWidth:  1280,
-		ScreenHeight: 720,
-		Fullscreen:   false,
+		ScreenWidth:  rl.GetMonitorWidth(rl.GetCurrentMonitor()),
+		ScreenHeight: rl.GetMonitorHeight(rl.GetCurrentMonitor()),
+		Fullscreen:   true,
 		Keys: systems_data.InputMap{
 			KeyLeft:  rl.KeyA,
 			KeyUp:    rl.KeyW,

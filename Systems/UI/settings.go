@@ -93,12 +93,14 @@ func (s *SettingsScreen) Draw() {
 			}
 		}
 
-		// Fullscreen Checkbox
-		raygui.Label(rl.Rectangle{X: float32(startX), Y: float32((startY + (buttonHeight * 2) + vSpace) + buttonHeight - 10), Width: float32(labelOffset), Height: float32(buttonHeight)}, "Fullscreen:")
-		s.settings.Fullscreen = raygui.CheckBox(
-			rl.Rectangle{X: float32(startX + labelOffset), Y: float32((startY + (buttonHeight * 2) + vSpace) + buttonHeight - 10), Width: float32(20), Height: float32(20)},
-			"", s.settings.Fullscreen,
-		)
+		/*
+			// Fullscreen Checkbox
+			raygui.Label(rl.Rectangle{X: float32(startX), Y: float32((startY + (buttonHeight * 2) + vSpace) + buttonHeight - 10), Width: float32(labelOffset), Height: float32(buttonHeight)}, "Fullscreen:")
+			s.settings.Fullscreen = raygui.CheckBox(
+				rl.Rectangle{X: float32(startX + labelOffset), Y: float32((startY + (buttonHeight * 2) + vSpace) + buttonHeight - 10), Width: float32(20), Height: float32(20)},
+				"", s.settings.Fullscreen,
+			)
+		*/
 
 		// Keybindings
 		keyStartY := startY + (buttonHeight * 3) + vSpace
@@ -168,24 +170,26 @@ func (s *SettingsScreen) Draw() {
 		}
 	}
 
-	// Draw the dropdown last so it appears on top of other menu items
-	// Screen Resolution Dropdown
-	raygui.Label(rl.Rectangle{X: float32(startX), Y: float32(startY + buttonHeight + vSpace), Width: float32(labelOffset), Height: float32(buttonHeight)}, "Resolution:")
-	if raygui.DropdownBox(
-		rl.Rectangle{X: float32(startX + labelOffset), Y: float32(startY + buttonHeight + vSpace), Width: float32(buttonWidth), Height: float32(buttonHeight)},
-		s.resolutionList, &s.selectedResolution, s.resolutionActive,
-	) {
-		s.resolutionActive = !s.resolutionActive // Toggle dropdown state
-	}
-
-	// Apply resolution change when dropdown is closed
-	if !s.resolutionActive {
-		parts := strings.Split(s.resolutions[s.selectedResolution], "x")
-		if len(parts) == 2 {
-			fmt.Sscanf(parts[0], "%d", &s.settings.ScreenWidth)
-			fmt.Sscanf(parts[1], "%d", &s.settings.ScreenHeight)
+	/*
+		// Draw the dropdown last so it appears on top of other menu items
+		// Screen Resolution Dropdown
+		raygui.Label(rl.Rectangle{X: float32(startX), Y: float32(startY + buttonHeight + vSpace), Width: float32(labelOffset), Height: float32(buttonHeight)}, "Resolution:")
+		if raygui.DropdownBox(
+			rl.Rectangle{X: float32(startX + labelOffset), Y: float32(startY + buttonHeight + vSpace), Width: float32(buttonWidth), Height: float32(buttonHeight)},
+			s.resolutionList, &s.selectedResolution, s.resolutionActive,
+		) {
+			s.resolutionActive = !s.resolutionActive // Toggle dropdown state
 		}
-	}
+
+		// Apply resolution change when dropdown is closed
+		if !s.resolutionActive {
+			parts := strings.Split(s.resolutions[s.selectedResolution], "x")
+			if len(parts) == 2 {
+				fmt.Sscanf(parts[0], "%d", &s.settings.ScreenWidth)
+				fmt.Sscanf(parts[1], "%d", &s.settings.ScreenHeight)
+			}
+		}
+	*/
 
 }
 
