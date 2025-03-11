@@ -24,7 +24,6 @@ func main() {
 
 	rl.InitWindow(int32(sm.Data.Settings.ScreenWidth), int32(sm.Data.Settings.ScreenHeight), "Space Shoot Em Up - Raylib Go")
 	defer rl.CloseWindow()
-	rl.SetWindowState(rl.FlagWindowResizable)
 	rl.SetTargetFPS(sm.Data.Settings.TargetFPS)
 	data, err := assetsFS.ReadFile("assets/raygui-styles/style_cyber.rgs")
 	if err == nil {
