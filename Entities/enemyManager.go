@@ -1,7 +1,7 @@
 package entities
 
 import (
-	"fmt"
+	"log"
 	"math/rand"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -38,7 +38,6 @@ func (em *EnemyManager) Update(delta float32) {
 	}
 	for _, e := range em.enemies.activePool {
 		if e.texture.ID <= 0 {
-			fmt.Println("Enemy texture is nil, setting to random texture")
 			randIndex := rand.Intn(len(em.enemyTextures))
 			e.texture = em.enemyTextures[randIndex]
 			e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
@@ -54,7 +53,7 @@ func (em *EnemyManager) SpawnNewEnemies(level int) {
 	totalCount := level * em.enemyCount
 	if len(em.enemies.activePool) < totalCount {
 		newSpawns := totalCount - len(em.enemies.activePool)
-		fmt.Printf("Spawning %d new enemies\n", newSpawns)
+		log.Printf("Enemy Manager: Spawning %d new enemies\n", newSpawns)
 		for range newSpawns {
 			_ = em.enemies.Get()
 		}

@@ -1,7 +1,6 @@
 package systems
 
 import (
-	"fmt"
 	"log"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -206,7 +205,7 @@ func (gm *GameManager) ShouldExit() bool {
 
 func (gm *GameManager) handleChangeStateEvent(e events.Event) {
 	if data, ok := e.Data.(events_data.ChangeStateData); ok {
-		fmt.Println("Processing change state event. Changing to: ", data.NewState)
+		log.Println("Game Manager: Processing change state event. Changing to: ", data.NewState)
 		gm.returnState = gm.state
 		gm.state = data.NewState
 		if gm.state == systems_data.Playing {
@@ -227,7 +226,7 @@ func (gm *GameManager) handleReturnStateEvent(e events.Event) {
 
 func (gm *GameManager) handleUpdatedSettings(e events.Event) {
 	if data, ok := e.Data.(events_data.UpdateSettingsData); ok {
-		fmt.Println("Game Manager: Updating settings")
+		log.Println("Game Manager: Updating settings")
 		gm.currentSettings = data.NewSettings
 		rl.SetTargetFPS(data.NewSettings.TargetFPS)
 		if rl.IsWindowFullscreen() != data.NewSettings.Fullscreen {

@@ -24,8 +24,8 @@ type SettingsScreen struct {
 }
 
 func (s *SettingsScreen) Update(state map[string]any) {
-	s.settings = &saveManager.GetInstance().Data.Settings
 	if len(s.resolutions) == 0 {
+		s.settings = &saveManager.GetInstance().Data.Settings
 		s.resolutions = []string{
 			"3840x2160", "2560x1440", "1920x1080", "1600x900",
 			"1366x768", "1280x720", "1024x768", "800x600",
@@ -57,13 +57,11 @@ func (s *SettingsScreen) Update(state map[string]any) {
 
 	s.selectedResolution = int32(selectedIndex)
 	s.ScreenState["settings"] = s.settings
-	s.ScreenState["windowSize"] = rl.Vector2{X: float32(rl.GetRenderWidth()), Y: float32(rl.GetRenderHeight())}
-
 }
 
 func (s *SettingsScreen) Draw() {
-	screenWidth := s.ScreenState["windowSize"].(rl.Vector2).X
-	screenHeight := s.ScreenState["windowSize"].(rl.Vector2).Y
+	screenWidth := rl.GetScreenWidth()
+	screenHeight := rl.GetScreenHeight()
 	vSpace := int32(20)
 	startX := int32(screenWidth / 2)
 	startY := int32(screenHeight / 3)

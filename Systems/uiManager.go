@@ -1,6 +1,8 @@
 package systems
 
 import (
+	rl "github.com/gen2brain/raylib-go/raylib"
+	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
@@ -74,18 +76,24 @@ func (u *UIManager) Update(update UIUpdate) {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Playing,
 				})
+				u.playConfirmSound()
+				break
 			}
 			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
 			if exists && exitButtonPressed {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Exit,
 				})
+				u.playConfirmSound()
+				break
 			}
 			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
 			if exists && settingsButtonPressed {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Settings,
 				})
+				u.playConfirmSound()
+				break
 			}
 			break
 		case systems_data.Playing:
@@ -96,6 +104,8 @@ func (u *UIManager) Update(update UIUpdate) {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Exit,
 				})
+				u.playConfirmSound()
+				break
 			}
 			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
 			if exists && settingsButtonPressed {
@@ -103,6 +113,8 @@ func (u *UIManager) Update(update UIUpdate) {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Settings,
 				})
+				u.playConfirmSound()
+				break
 			}
 			break
 		case systems_data.GameOver:
@@ -113,12 +125,16 @@ func (u *UIManager) Update(update UIUpdate) {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Restart,
 				})
+				u.playConfirmSound()
+				break
 			}
 			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
 			if exists && exitButtonPressed {
 				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
 					NewState: systems_data.Exit,
 				})
+				u.playConfirmSound()
+				break
 			}
 			break
 		case systems_data.Settings:
@@ -126,6 +142,8 @@ func (u *UIManager) Update(update UIUpdate) {
 			if exists && backButtonPressed {
 				screenState["back"] = false
 				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
+				u.playConfirmSound()
+				break
 			}
 			saveButtonPressed, exists := screenState["save"].(bool)
 			if exists && saveButtonPressed {
@@ -135,6 +153,8 @@ func (u *UIManager) Update(update UIUpdate) {
 					saveManager.GetInstance().UpdateSettings(settings)
 				}
 				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
+				u.playConfirmSound()
+				break
 			}
 			break
 		default:
@@ -142,4 +162,12 @@ func (u *UIManager) Update(update UIUpdate) {
 		}
 	}
 
+}
+
+func (u *UIManager) playConfirmSound() {
+	sound, ok := assets.GetAssetManagerInstance().GetSound("assets/sfx/Interface_Bleeps_Wav/Confirm_02.wav")
+	if ok {
+		rl.PlaySound(sound)
+		rl.SetSoundVolume(sound, saveManager.GetInstance().Data.Settings.SfxVolume)
+	}
 }

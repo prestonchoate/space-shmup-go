@@ -45,10 +45,8 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 
 	// Walk through all subdirectories and load all assets
 	err := fs.WalkDir(embedFS, "assets", func(path string, entry fs.DirEntry, err error) error {
-		log.Println("Asset manager processing path: ", path)
-
 		if err != nil {
-			log.Printf("Error reading asset: %v\n", err)
+			log.Printf("Asset Manager: Error reading asset: %v\n", err)
 			return nil
 		}
 
@@ -58,7 +56,7 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 
 		ext := strings.ToLower(filepath.Ext(entry.Name()))
 		if ext == "" {
-			log.Printf("Cannot determine file format of %s. Skipping\n", path)
+			log.Printf("Asset Manager: Cannot determine file format of %s. Skipping\n", path)
 			return nil
 		}
 
@@ -66,7 +64,7 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 			if texture, err := am.loadTextureFromEmbed(path, ext); err == nil {
 				am.textures[path] = texture
 			} else {
-				log.Printf("Skipping non-image asset: %s, error: %v\n", path, err)
+				log.Printf("Asset Manager: Skipping non-image asset: %s, error: %v\n", path, err)
 			}
 			return nil
 		}
@@ -79,7 +77,7 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 			if sound, err := am.loadSoundFromEmbed(path, ext); err == nil {
 				am.sounds[path] = sound
 			} else {
-				log.Printf("Skipping non-sound asset: %s, error: %v\n", path, err)
+				log.Printf("Asset Manager: Skipping non-sound asset: %s, error: %v\n", path, err)
 			}
 			return nil
 		}
@@ -88,7 +86,7 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 			if music, err := am.loadMusicFromEmbed(path, ext); err == nil {
 				am.music[path] = music
 			} else {
-				log.Printf("Skipping non-music asset: %s, error: %v\n", path, err)
+				log.Printf("Asset Manager: Skipping non-music asset: %s, error: %v\n", path, err)
 			}
 			return nil
 		}
@@ -97,15 +95,14 @@ func (am *AssetManager) LoadAssets(embedFS embed.FS) {
 	})
 
 	if err != nil {
-		log.Fatalf("Failed to load assets: %v\n", err)
+		log.Fatalf("Asset Manager: Failed to load assets: %v\n", err)
 	}
 
-	log.Printf("Loaded assets!\n%+v\n", am.textures)
+	log.Printf("Asset Manager: Loaded assets!\n")
 }
 
 // loadTexture reads an embedded file and loads it as a Raylib texture.
 func (am *AssetManager) loadTextureFromEmbed(path string, fileType string) (rl.Texture2D, error) {
-	log.Println("Asset manager attempting to load file: ", path, " with type ", fileType)
 	data, err := am.fs.ReadFile(path)
 	if err != nil {
 		return rl.Texture2D{}, fmt.Errorf("failed to read embedded asset: %v", err)
@@ -144,7 +141,7 @@ func (am *AssetManager) loadSoundFromEmbed(path string, fileType string) (rl.Sou
 func (am *AssetManager) loadMusicFromEmbed(path string, fileType string) (rl.Music, error) {
 	data, err := am.fs.ReadFile(path)
 	if err != nil {
-		return rl.Music{}, fmt.Errorf("Failed to read embedded asset: %s", err)
+		return rl.Music{}, fmt.Errorf("failed to read embedded asset: %s", err)
 	}
 
 	stream := rl.LoadMusicStreamFromMemory(fileType, data, int32(len(data)))

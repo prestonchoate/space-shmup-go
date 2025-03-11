@@ -2,7 +2,6 @@ package saveManager
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -99,16 +98,16 @@ func (sm *SaveManager) loadData() bool {
 		return sm.createDefaultSettings()
 	}
 
-	log.Printf("Save Manager: successfully loaded data from settings file!\nSettings: %+v\n", sm.Data.Settings)
+	log.Printf("Save Manager: successfully loaded data from settings file!\n")
 	return true
 }
 
 func (sm *SaveManager) createDefaultSettings() bool {
 	settings := systems_data.GameSettings{
 		TargetFPS:    120,
-		ScreenWidth:  rl.GetScreenWidth(),
-		ScreenHeight: rl.GetScreenHeight(),
-		Fullscreen:   true,
+		ScreenWidth:  1280,
+		ScreenHeight: 720,
+		Fullscreen:   false,
 		Keys: systems_data.InputMap{
 			KeyLeft:  rl.KeyA,
 			KeyUp:    rl.KeyW,
@@ -152,7 +151,7 @@ func (sm *SaveManager) UpdateSettings(settings *systems_data.GameSettings) {
 }
 
 func (sm *SaveManager) saveSettings(settings SaveData) bool {
-	log.Printf("Save Manager: attempting to save data:\n%+v\n", settings)
+	log.Printf("Save Manager: attempting to save data:\n")
 	data, err := json.Marshal(settings)
 
 	if err != nil {
@@ -174,7 +173,7 @@ func (sm *SaveManager) saveSettings(settings SaveData) bool {
 		return false
 	}
 
-	fmt.Printf("Save Manager: wrote settings to save file!\n")
+	log.Printf("Save Manager: wrote settings to save file!\n")
 
 	return true
 }

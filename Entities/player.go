@@ -1,7 +1,6 @@
 package entities
 
 import (
-	"fmt"
 	"math/rand"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -86,8 +85,6 @@ func (p *Player) Draw() {
 	if p.health <= 0 {
 		return
 	}
-
-	rl.DrawText(fmt.Sprint("Fire Rate: ", p.fireRate), 10, 30, 10, rl.Blue)
 
 	tint := rl.White
 	if p.damaged {
