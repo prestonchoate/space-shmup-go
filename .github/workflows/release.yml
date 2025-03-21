@@ -1,0 +1,56 @@
+name: Release with GoReleaser
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+          
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          # Install mingw for Windows cross-compilation
+          sudo apt-get install -y gcc-mingw-w64 g++-mingw-w64
+          
+          # Install all required libraries for raylib/GLFW on Linux including Wayland
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxss-dev \
+            libglu1-mesa-dev \
+            pkg-config \
+            libwayland-dev \
+            libwayland-client0 \
+            libwayland-cursor0 \
+            libwayland-egl1 \
+            wayland-protocols \
+            libxkbcommon-dev \
+            libegl1-mesa-dev
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
