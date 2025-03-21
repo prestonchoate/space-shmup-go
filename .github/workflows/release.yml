@@ -27,8 +27,24 @@ jobs:
           sudo apt-get update
           # Install mingw for Windows cross-compilation
           sudo apt-get install -y gcc-mingw-w64 g++-mingw-w64
-          # Install required libraries for raylib/GLFW on Linux
-          sudo apt-get install -y libgl1-mesa-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev libxss-dev libglu1-mesa-dev pkg-config
+          
+          # Install all required libraries for raylib/GLFW on Linux including Wayland
+          sudo apt-get install -y \
+            libgl1-mesa-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libxi-dev \
+            libxrandr-dev \
+            libxss-dev \
+            libglu1-mesa-dev \
+            pkg-config \
+            libwayland-dev \
+            libwayland-client0 \
+            libwayland-cursor0 \
+            libwayland-egl1 \
+            wayland-protocols \
+            libxkbcommon-dev \
+            libegl1-mesa-dev
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
