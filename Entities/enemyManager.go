@@ -43,7 +43,7 @@ func (em *EnemyManager) Update(delta float32) {
 			e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
 			startX := rl.GetRandomValue(e.texture.Width+10, int32(rl.GetScreenWidth())-e.texture.Width-10)
 			startY := rl.GetRandomValue(-600, -100)
-			e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width), float32(e.texture.Height))
+			e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width)*.66, float32(e.texture.Height)*.66)
 		}
 		e.Update(delta)
 	}

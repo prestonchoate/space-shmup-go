@@ -2,6 +2,9 @@ package main
 
 import (
 	"embed"
+	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/gen2brain/raylib-go/raygui"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -14,9 +17,17 @@ import (
 var assetsFS embed.FS
 
 func main() {
-	sm := saveManager.GetInstance()
-
+	checkAndCreateLogPaths(filepath.Join(getHomePath(), "Games", "space-shmup-go"), "game.log")
+	file, err := os.OpenFile(filepath.Join(getHomePath(), "Games", "space-shmup-go", "game.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	log.SetOutput(file)
 	rl.SetTraceLogLevel(rl.LogError)
+	log.Printf("\n\n\n\nSTARTING NEW GAME!\n")
+
+	sm := saveManager.GetInstance()
 
 	rl.InitAudioDevice()
 	rl.SetAudioStreamBufferSizeDefault(16384)
@@ -41,4 +52,41 @@ func main() {
 		gm.Update()
 		gm.Draw()
 	}
+}
+
+func getHomePath() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Printf("Save Manager: failed to get user home directory: %v\n", err)
+		return ""
+	}
+	return homeDir
+
+}
+
+func checkAndCreateLogPaths(path string, fileName string) bool {
+	settingsPath := filepath.Join(path, fileName)
+	dirPath := filepath.Dir(settingsPath)
+
+	err := os.MkdirAll(dirPath, os.ModePerm)
+	if err != nil {
+		log.Printf("failed to create log directory: %v\n", err)
+		return false
+	}
+
+	if _, err := os.Stat(settingsPath); os.IsNotExist(err) {
+		file, err := os.Create(settingsPath)
+		if err != nil {
+			log.Printf("failed to create log file: %v\n", err)
+			return false
+		}
+		file.Close()
+		log.Printf("created log file\n")
+	} else if err != nil {
+		log.Printf("could not check for log file: %v\n", err)
+		return false
+	}
+
+	return true
+
 }

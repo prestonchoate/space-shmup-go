@@ -27,7 +27,7 @@ type SaveData struct {
 func GetInstance() *SaveManager {
 	if instance == nil {
 		instance = &SaveManager{
-			FilePath: "Games/Saves/space-shmup-go/",
+			FilePath: filepath.Join("Games", "space-shmup-go", "Saves"),
 			FileName: "settings.json",
 		}
 		ok := instance.checkAndCreatePaths()
