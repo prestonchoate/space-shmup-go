@@ -1,0 +1,48 @@
+project_name: space-shmup-go
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: linux-build
+    goos:
+    - linux
+    goarch:
+    - amd64
+    env:
+    - CGO_ENABLED=1
+    ldflags:
+    - -s -w
+
+  - id: windows-build
+    goos:
+    - windows
+    goarch:
+    - amd64
+    env:
+    - CGO_ENABLED=1
+    - CC=x86_64-w64-mingw32-gcc
+    ldflags:
+    - -s -w
+
+archives:
+  - format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+    - goos: windows
+      format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

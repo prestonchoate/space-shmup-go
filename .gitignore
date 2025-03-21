@@ -20,8 +20,9 @@
 !assets/*
 !assets/**
 
-!build.sh
-
+!.goreleaser.yaml
+!.github/*
+!.github/**
 # !Makefile
 
 # ...even if they are in subdirectories
