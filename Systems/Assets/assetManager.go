@@ -162,6 +162,16 @@ func (am *AssetManager) GetTexture(path string) (rl.Texture2D, bool) {
 	return texture, found
 }
 
+func (am *AssetManager) GetAllTexturesFromPath(path string) []rl.Texture2D {
+	texs := []rl.Texture2D{}
+	for key, tex := range am.textures {
+		if strings.Contains(key, path) {
+			texs = append(texs, tex)
+		}
+	}
+	return texs
+}
+
 func (am *AssetManager) GetSound(path string) (rl.Sound, bool) {
 	sound, found := am.sounds[path]
 	return sound, found

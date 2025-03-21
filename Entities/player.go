@@ -1,6 +1,7 @@
 package entities
 
 import (
+	"log"
 	"math/rand"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -34,24 +35,35 @@ type Player struct {
 	fireDelay   float32
 }
 
-func CreatePlayer(tex *rl.Texture2D, projTex *rl.Texture2D, keys systems_data.InputMap) *Player {
+func CreatePlayer(keys systems_data.InputMap) *Player {
+	texture, ok := assets.GetAssetManagerInstance().GetTexture("assets/sprites/player/playerShip1_red.png")
+	if !ok {
+		log.Fatal("couldn't load player texture")
+	}
+
+	projTexture, ok := assets.GetAssetManagerInstance().GetTexture("assets/sprites/projectile/laserRed07.png")
+	if !ok {
+		log.Fatal("couldn't load projectile texture")
+	}
+	rl.SetTextureWrap(projTexture, rl.WrapRepeat)
+
 	p := &Player{
 		id:      uuid.New(),
-		texture: *(tex),
+		texture: texture,
 		speed:   350,
 		origin:  rl.Vector2{X: 0.0, Y: 0.0},
-		srcRect: rl.NewRectangle(0.0, 0.0, float32(tex.Width), float32(tex.Height)),
-		destRect: rl.NewRectangle(float32(tex.Width),
-			float32(rl.GetScreenHeight()-int(tex.Height)),
-			float32(tex.Width),
-			float32(tex.Height)),
+		srcRect: rl.NewRectangle(0.0, 0.0, float32(texture.Width), float32(texture.Height)),
+		destRect: rl.NewRectangle(float32(texture.Width),
+			float32(rl.GetScreenHeight()-int(texture.Height)),
+			float32(texture.Width),
+			float32(texture.Height)),
 		keyMap: keys,
 		projPool: ObjectPool[*Projectile]{
 			activePool:   make(map[uuid.UUID]*Projectile),
 			inactivePool: make([]*Projectile, 0, 200),
 			createFn:     createProjectile,
 		},
-		projTex:     *projTex,
+		projTex:     projTexture,
 		health:      100,
 		active:      true,
 		damageTicks: DEFAULT_DAMAGE_TICKS,
@@ -91,10 +103,11 @@ func (p *Player) Draw() {
 		tint = rl.Red
 	}
 
-	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, tint)
 	for _, proj := range p.projPool.activePool {
 		proj.Draw()
 	}
+
+	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, tint)
 }
 
 func (p *Player) Update(delta float32) {

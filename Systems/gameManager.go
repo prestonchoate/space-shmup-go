@@ -12,10 +12,6 @@ import (
 	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
-var PlayerTexture rl.Texture2D
-var BackgroundTexture rl.Texture2D
-var ProjectileTexture rl.Texture2D
-var EnemyTextures []rl.Texture2D
 var gameManagerInstance *GameManager
 
 type GameManager struct {
@@ -107,8 +103,8 @@ func (gm *GameManager) handleButtonInputs() {
 }
 
 func (gm *GameManager) Reset() {
-	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.Keys)
-	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
+	gm.Player = entities.CreatePlayer(gm.currentSettings.Keys)
+	gm.EnemyManager = entities.CreateEnemyManager()
 	gm.collisionSystem.player = gm.Player
 	gm.collisionSystem.enemyManager = gm.EnemyManager
 	gm.GameSetup()
@@ -121,7 +117,7 @@ func (gm *GameManager) GameSetup() {
 	gm.fps = rl.GetFPS()
 	gm.state = systems_data.Loading
 	if !gm.assetsLoaded {
-		gm.loadAssets()
+		//gm.loadAssets()
 		gm.assetsLoaded = true
 	}
 
@@ -134,6 +130,7 @@ func (gm *GameManager) GameSetup() {
 	gm.state = systems_data.Playing
 }
 
+/*
 func (gm *GameManager) loadAssets() {
 	// TODO: allow all entities to grab their own textures from the AssetManager so that there is a single place to manage that entity's data
 	am := assets.GetAssetManagerInstance()
@@ -153,20 +150,18 @@ func (gm *GameManager) loadAssets() {
 		log.Fatal("Enemy texture not available in asset manager")
 	}
 
-	PlayerTexture = pt
-	ProjectileTexture = projTex
 
-	EnemyTextures = append(EnemyTextures, et)
 	rl.SetTextureWrap(BackgroundTexture, rl.WrapRepeat)
 	rl.SetTextureWrap(ProjectileTexture, rl.WrapRepeat)
 }
+*/
 
 func createGameManager() *GameManager {
 	gm := &GameManager{
 		state:    systems_data.Start,
 		entities: []entities.GameEntity{},
 	}
-	gm.loadAssets()
+	//gm.loadAssets()
 	gm.assetsLoaded = true
 	bg := entities.CreateBackground()
 	gm.entities = append(gm.entities, bg)
@@ -187,8 +182,8 @@ func createGameManager() *GameManager {
 
 	rl.SetSoundVolume(*gm.backgroundMusic, gm.currentSettings.MusicVolume)
 
-	gm.Player = entities.CreatePlayer(&PlayerTexture, &ProjectileTexture, gm.currentSettings.Keys)
-	gm.EnemyManager = entities.CreateEnemyManager(EnemyTextures)
+	gm.Player = entities.CreatePlayer(gm.currentSettings.Keys)
+	gm.EnemyManager = entities.CreateEnemyManager()
 
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager()

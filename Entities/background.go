@@ -24,6 +24,7 @@ func CreateBackground() *Background {
 	if !ok {
 		log.Fatal("Background textrue not available in asset manager")
 	}
+	rl.SetTextureWrap(bt, rl.WrapRepeat)
 	bg := &Background{
 		id:       uuid.New(),
 		texture:  bt,

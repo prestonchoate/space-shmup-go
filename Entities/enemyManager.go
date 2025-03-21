@@ -91,7 +91,10 @@ func (em *EnemyManager) GetEnemyCount() int {
 	return len(em.enemies.activePool)
 }
 
-func CreateEnemyManager(textures []rl.Texture2D) *EnemyManager {
+func CreateEnemyManager() *EnemyManager {
+	am := assets.GetAssetManagerInstance()
+	textures := am.GetAllTexturesFromPath("assets/sprites/enemies")
+
 	em := &EnemyManager{
 		id:            uuid.UUID{},
 		enemyTextures: textures,
