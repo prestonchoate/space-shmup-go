@@ -6,4 +6,5 @@ const (
 	ChangeGameState     EventName = "changeState"
 	GameSettingsUpdated EventName = "settingsUpdate"
 	ReturnGameState     EventName = "returnState"
+	SubmitHighScore     EventName = "submitHighScore"
 )

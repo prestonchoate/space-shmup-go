@@ -11,7 +11,7 @@ builds:
     env:
     - CGO_ENABLED=1
     ldflags:
-    - -s -w
+    - -s -w -X github.com/prestonchoate/space-shmup/Systems/Leaderboard.Version={{.Version}} -X github.com/prestonchoate/space-shmup/Systems/Leaderboard.apiKey={{.Env.API_KEY}}
 
   - id: windows-build
     goos:

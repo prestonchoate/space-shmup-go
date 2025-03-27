@@ -20,6 +20,7 @@ func (g *GameOverScreen) Draw() {
 
 	restartButtonText := "RESTART"
 	exitButtonText := "QUIT"
+	submitButtonText := "SUBMIT"
 
 	buttonWidth := rl.MeasureText(restartButtonText, 40)
 	buttonHeight := 80
@@ -27,7 +28,7 @@ func (g *GameOverScreen) Draw() {
 	screenHeight := rl.GetScreenHeight()
 
 	spacing := int32(20)
-	totalWidth := (2 * buttonWidth) + spacing
+	totalWidth := (3 * buttonWidth) + spacing
 	startX := (screenWidth - int(totalWidth)) / 2
 	buttonY := (screenHeight / 4) * 3
 
@@ -56,8 +57,16 @@ func (g *GameOverScreen) Draw() {
 	},
 		restartButtonText,
 	)
-	g.ScreenState["exitButtonPressed"] = raygui.Button(rl.Rectangle{
+	g.ScreenState["submitButtonPressed"] = raygui.Button(rl.Rectangle{
 		X:      float32(startX + int(spacing) + int(buttonWidth)),
+		Y:      float32(buttonY),
+		Width:  float32(buttonWidth),
+		Height: float32(buttonHeight),
+	},
+		submitButtonText,
+	)
+	g.ScreenState["exitButtonPressed"] = raygui.Button(rl.Rectangle{
+		X:      float32(startX + (int(spacing)+int(buttonWidth))*2),
 		Y:      float32(buttonY),
 		Width:  float32(buttonWidth),
 		Height: float32(buttonHeight),

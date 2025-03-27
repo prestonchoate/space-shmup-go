@@ -9,26 +9,28 @@ import (
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
+	leaderboard "github.com/prestonchoate/space-shmup/Systems/Leaderboard"
 	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 var gameManagerInstance *GameManager
 
 type GameManager struct {
-	entities        []entities.GameEntity
-	windowHeight    int
-	windowWidth     int
-	fps             int32
-	level           int
-	state           systems_data.GameState
-	uiSystem        *UIManager
-	collisionSystem *CollisionManager
-	assetsLoaded    bool
-	currentSettings systems_data.GameSettings
-	Player          *entities.Player
-	EnemyManager    *entities.EnemyManager
-	backgroundMusic *rl.Sound // TODO: Change this to rl.Music when the audio issue is resolved
-	returnState     systems_data.GameState
+	entities          []entities.GameEntity
+	windowHeight      int
+	windowWidth       int
+	fps               int32
+	level             int
+	state             systems_data.GameState
+	uiSystem          *UIManager
+	collisionSystem   *CollisionManager
+	assetsLoaded      bool
+	currentSettings   systems_data.GameSettings
+	Player            *entities.Player
+	EnemyManager      *entities.EnemyManager
+	backgroundMusic   *rl.Sound // TODO: Change this to rl.Music when the audio issue is resolved
+	returnState       systems_data.GameState
+	leaderboardClient *leaderboard.Client
 }
 
 func GetGameMangerInstance() *GameManager {
@@ -187,10 +189,12 @@ func createGameManager() *GameManager {
 
 	gm.collisionSystem = CreateCollisionManager(gm.Player, gm.EnemyManager)
 	gm.uiSystem = CreateUIManager()
+	gm.leaderboardClient = leaderboard.NewLeaderboardClient()
 
 	events.GetEventManagerInstance().Subscribe(events_data.ChangeGameState, gm.handleChangeStateEvent)
 	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, gm.handleUpdatedSettings)
 	events.GetEventManagerInstance().Subscribe(events_data.ReturnGameState, gm.handleReturnStateEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.SubmitHighScore, gm.leaderboardClient.HandleHighScoreSubmission)
 	return gm
 }
 

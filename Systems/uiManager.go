@@ -136,6 +136,14 @@ func (u *UIManager) Update(update UIUpdate) {
 				u.playConfirmSound()
 				break
 			}
+			submitButtonPressed, exists := screenState["submitButtonPressed"].(bool)
+			if exists && submitButtonPressed {
+				//TODO: Get intials from screen state
+				events.GetEventManagerInstance().Emit(events_data.SubmitHighScore, events_data.HighScoreData{
+					Initials: "PTC",
+					Score:    int64(update.score),
+				})
+			}
 			break
 		case systems_data.Settings:
 			backButtonPressed, exists := screenState["back"].(bool)

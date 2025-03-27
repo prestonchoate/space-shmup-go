@@ -13,3 +13,8 @@ type UpdateSettingsData struct {
 }
 
 type ReturnStateData struct{}
+
+type HighScoreData struct {
+	Initials string
+	Score    int64
+}
