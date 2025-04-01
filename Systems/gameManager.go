@@ -77,6 +77,7 @@ func (gm *GameManager) Update() {
 		score:      gm.Player.GetScore(),
 		enemyCount: gm.EnemyManager.GetEnemyCount(),
 		state:      gm.state,
+		delta:      dt,
 	})
 }
 

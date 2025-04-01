@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	rl "github.com/gen2brain/raylib-go/raylib"
 	events "github.com/prestonchoate/space-shmup/Systems/Events"
 	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 )
@@ -77,7 +78,14 @@ func (c *Client) HandleHighScoreSubmission(e events.Event) {
 			err := c.refreshAuthToken()
 			if err != nil {
 				log.Println("Leaderboard Client: Could not submit score")
-				// TODO: show error message somehow
+				events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+					Message: "Failed to upload score " + err.Error(),
+					Timer:   2.0,
+					Color:   rl.Red,
+				})
+				events.GetEventManagerInstance().Emit(events_data.ScoreSubmissionComplete, events_data.ScoreSubmissionCompleteData{
+					Success: false,
+				})
 				return
 			}
 		}
@@ -89,9 +97,25 @@ func (c *Client) HandleHighScoreSubmission(e events.Event) {
 
 		if err != nil {
 			log.Println("Leaderboard Client: Could not submit score")
-			// TODO: show error message somehow
+			events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+				Message: "Failed to upload score " + err.Error(),
+				Timer:   2.0,
+				Color:   rl.Red,
+			})
+			events.GetEventManagerInstance().Emit(events_data.ScoreSubmissionComplete, events_data.ScoreSubmissionCompleteData{
+				Success: false,
+			})
 			return
 		}
+
+		events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+			Message: "Score Uploaded!",
+			Timer:   2.0,
+			Color:   rl.DarkGreen,
+		})
+		events.GetEventManagerInstance().Emit(events_data.ScoreSubmissionComplete, events_data.ScoreSubmissionCompleteData{
+			Success: true,
+		})
 	}
 }
 
@@ -99,13 +123,13 @@ func (c *Client) submitScore(submission submissionRequest) error {
 	jsonStr, err := json.Marshal(submission)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to marshal submission request ", err)
-		return err
+		return fmt.Errorf("failed to create submission payload")
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%v/scores", c.endpoint), bytes.NewBuffer(jsonStr))
 	if err != nil {
 		log.Println("Leaderboard Client: failed to create http request ", err)
-		return err
+		return fmt.Errorf("failed to create http client")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -115,7 +139,7 @@ func (c *Client) submitScore(submission submissionRequest) error {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to send request ", err)
-		return err
+		return fmt.Errorf("request failure")
 	}
 
 	defer resp.Body.Close()
@@ -123,7 +147,7 @@ func (c *Client) submitScore(submission submissionRequest) error {
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to ready request body ", err)
-		return err
+		return fmt.Errorf("failed to parse response")
 	}
 
 	if resp.StatusCode != http.StatusCreated {
@@ -135,7 +159,7 @@ func (c *Client) submitScore(submission submissionRequest) error {
 	err = json.Unmarshal(data, &scoreResp)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to unmarshal submission response ", err)
-		return err
+		return fmt.Errorf("failed to parse response data")
 	}
 
 	log.Printf("Leaderboard Client: Submission success. New score data: %+v\n", scoreResp)
@@ -155,14 +179,14 @@ func (c *Client) refreshAuthToken() error {
 	jsonStr, err := json.Marshal(loginReq)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to marshal login data ", err)
-		return err
+		return fmt.Errorf("failed to create login data")
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%v/auth/client/login", c.endpoint), bytes.NewBuffer(jsonStr))
 
 	if err != nil {
 		log.Println("Leaderboard Client: failed to create http request ", err)
-		return err
+		return fmt.Errorf("failed to create login request")
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -171,7 +195,7 @@ func (c *Client) refreshAuthToken() error {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to send request ", err)
-		return err
+		return fmt.Errorf("failed to send login request")
 	}
 
 	defer resp.Body.Close()
@@ -184,14 +208,14 @@ func (c *Client) refreshAuthToken() error {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to read response body ", err)
-		return err
+		return fmt.Errorf("failed to read response body")
 	}
 
 	var loginResp clientLoginResponse
 	err = json.Unmarshal(body, &loginResp)
 	if err != nil {
 		log.Println("Leaderboard Client: failed to parse response body ", err)
-		return err
+		return fmt.Errorf("failed to parse login response body")
 	}
 
 	c.authToken = loginResp.Token

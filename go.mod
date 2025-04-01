@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/gen2brain/raylib-go/raygui v0.0.0-20241228120719-d58ffe1a3a73
-	github.com/gen2brain/raylib-go/raylib v0.0.0-20241202103652-5d50abe7c65b
+	github.com/gen2brain/raylib-go/raylib v0.0.0-20250327103758-b542022337b8
 	github.com/google/uuid v1.3.0
 )
 

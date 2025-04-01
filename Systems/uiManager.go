@@ -1,6 +1,8 @@
 package systems
 
 import (
+	"log"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
 	systems_data "github.com/prestonchoate/space-shmup/Systems/Data"
@@ -10,8 +12,10 @@ import (
 	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
+// TODO: possibility for concurrent read and write to messages map. Might need to add a mutex handler
 type UIManager struct {
 	screenList map[systems_data.GameState]ui.Screens
+	messages   []*events_data.AddMessageData
 }
 
 type UIUpdate struct {
@@ -19,6 +23,7 @@ type UIUpdate struct {
 	score      int
 	enemyCount int
 	state      systems_data.GameState
+	delta      float32
 }
 
 func CreateUIManager() *UIManager {
@@ -44,15 +49,34 @@ func CreateUIManager() *UIManager {
 		ScreenState: make(map[string]any),
 	}
 
-	return &UIManager{
+	u := &UIManager{
 		screenList: screens,
+		messages:   make([]*events_data.AddMessageData, 10),
 	}
+
+	events.GetEventManagerInstance().Subscribe(events_data.AddMessage, u.handleAddMessageEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.SubmitHighScore, u.handleScoreSubmissionEvent)
+	return u
 }
 
 func (u *UIManager) HandleGameStateRender(state systems_data.GameState) {
 	screen, exists := u.screenList[state]
 	if exists {
 		screen.Draw()
+	}
+
+	msgX := rl.GetScreenWidth()
+	msgY := rl.GetScreenHeight() - 30
+	padding := 20
+
+	for _, msg := range u.messages {
+		if msg == nil {
+			continue
+		}
+		if msg.Timer >= 0 {
+			rl.DrawText(msg.Message, int32(msgX)-rl.MeasureText(msg.Message, 20)-10, int32(msgY), 20, msg.Color)
+			msgY -= padding
+		}
 	}
 }
 
@@ -63,7 +87,29 @@ func (u *UIManager) Update(update UIUpdate) {
 		"enemyCount": update.enemyCount,
 	}
 
+	// reduce timer on each message by delta
+	for idx, msg := range u.messages {
+		if msg == nil {
+			continue
+		}
+		msg.Timer = msg.Timer - update.delta
+		if msg.Timer <= 0 {
+			u.messages[idx] = nil
+			continue
+		}
+		u.messages[idx] = msg
+	}
+
 	screen, exists := u.screenList[update.state]
+	if update.state != systems_data.GameOver {
+		// Remove score submission value from game over screen state
+		s, exists := u.screenList[systems_data.GameOver]
+		if exists {
+			state := s.GetScreenState()
+			delete(state, "scoreSubmitted")
+			s.Update(state)
+		}
+	}
 	if exists {
 		screen.Update(screenUpdate)
 		screenState := screen.GetScreenState()
@@ -138,11 +184,17 @@ func (u *UIManager) Update(update UIUpdate) {
 			}
 			submitButtonPressed, exists := screenState["submitButtonPressed"].(bool)
 			if exists && submitButtonPressed {
-				//TODO: Get intials from screen state
-				events.GetEventManagerInstance().Emit(events_data.SubmitHighScore, events_data.HighScoreData{
-					Initials: "PTC",
-					Score:    int64(update.score),
-				})
+				initials, exists := screenState["playerInitials"].(string)
+				if exists && len(initials) > 0 {
+					events.GetEventManagerInstance().Emit(events_data.SubmitHighScore, events_data.HighScoreData{
+						Initials: initials,
+						Score:    int64(update.score),
+					})
+					u.playConfirmSound()
+					screenState["scoreSubmitted"] = true
+					screenState["submitButtonPressed"] = false
+					screen.Update(screenState)
+				}
 			}
 			break
 		case systems_data.Settings:
@@ -170,6 +222,7 @@ func (u *UIManager) Update(update UIUpdate) {
 		}
 	}
 
+	u.cleanupMessageQueue()
 }
 
 func (u *UIManager) playConfirmSound() {
@@ -177,5 +230,36 @@ func (u *UIManager) playConfirmSound() {
 	if ok {
 		rl.PlaySound(sound)
 		rl.SetSoundVolume(sound, saveManager.GetInstance().Data.Settings.SfxVolume)
+	}
+}
+
+func (u *UIManager) cleanupMessageQueue() {
+	newMsgs := make([]*events_data.AddMessageData, len(u.messages))
+
+	for _, msg := range u.messages {
+		if msg != nil {
+			newMsgs = append(newMsgs, msg)
+		}
+	}
+
+	u.messages = newMsgs
+}
+
+func (u *UIManager) handleAddMessageEvent(event events.Event) {
+	if data, ok := event.Data.(events_data.AddMessageData); ok {
+		u.messages = append(u.messages, &data)
+	}
+}
+
+func (u *UIManager) handleScoreSubmissionEvent(event events.Event) {
+	if data, ok := event.Data.(events_data.ScoreSubmissionCompleteData); ok {
+		s, exists := u.screenList[systems_data.GameOver]
+		if exists && !data.Success {
+			log.Println("Removing score submission flag from game over state")
+			state := s.GetScreenState()
+			delete(state, "scoreSubmitted")
+			s.Update(state)
+		}
+
 	}
 }

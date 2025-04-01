@@ -3,6 +3,7 @@ package entities
 import (
 	"log"
 	"math/rand"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
@@ -173,6 +174,14 @@ func (p *Player) handlePlayerInput(delta float32) {
 
 	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyEnd) {
 		p.TakeDamage(10000000)
+	}
+
+	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyPageUp) {
+		events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+			Message: "Sample Data" + time.Now().String(),
+			Timer:   2.0,
+			Color:   rl.DarkGreen,
+		})
 	}
 }
 

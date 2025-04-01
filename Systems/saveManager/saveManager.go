@@ -144,7 +144,20 @@ func (sm *SaveManager) UpdateSettings(settings *systems_data.GameSettings) {
 
 	log.Printf("Save Manager: attempting to update settings:\n%+v\n", settings)
 	sm.Data.Settings = *settings
-	sm.saveSettings(sm.Data)
+	ok := sm.saveSettings(sm.Data)
+	if !ok {
+		events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+			Message: "Failed to save settings",
+			Timer:   2.0,
+			Color:   rl.Red,
+		})
+		return
+	}
+	events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+		Message: "Settings Saved!",
+		Timer:   2.0,
+		Color:   rl.DarkGreen,
+	})
 	events.GetEventManagerInstance().Emit(events_data.GameSettingsUpdated, events_data.UpdateSettingsData{
 		NewSettings: sm.Data.Settings,
 	})
