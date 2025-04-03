@@ -2,6 +2,7 @@ package entities
 
 import (
 	"log"
+	"runtime"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
@@ -22,14 +23,23 @@ func CreateBackground() *Background {
 	sm := saveManager.GetInstance()
 	bt, ok := am.GetTexture("assets/sprites/backgrounds/background.jpg")
 	if !ok {
-		log.Fatal("Background textrue not available in asset manager")
+		log.Fatal("Background texture not available in asset manager")
 	}
-	rl.SetTextureWrap(bt, rl.WrapRepeat)
+	if runtime.GOOS != "darwin" {
+		rl.SetTextureWrap(bt, rl.WrapRepeat)
+	}
+	sw, sh := sm.Data.Settings.ScreenWidth, sm.Data.Settings.ScreenHeight
+	if sw == 0 {
+		sw = rl.GetScreenWidth()
+	}
+	if sh == 0 {
+		sh = rl.GetScreenHeight()
+	}
 	bg := &Background{
 		id:       uuid.New(),
 		texture:  bt,
 		srcRect:  rl.NewRectangle(0.0, 0.0, float32(bt.Width), float32(bt.Height)),
-		destRect: rl.NewRectangle(0.0, 0.0, float32(sm.Data.Settings.ScreenWidth), float32(sm.Data.Settings.ScreenHeight)),
+		destRect: rl.NewRectangle(0.0, 0.0, float32(sw), float32(sh)),
 	}
 
 	return bg

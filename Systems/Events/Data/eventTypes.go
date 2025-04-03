@@ -9,4 +9,5 @@ const (
 	SubmitHighScore         EventName = "submitHighScore"
 	AddMessage              EventName = "addMessage"
 	ScoreSubmissionComplete EventName = "submissionComplete"
+	StatUpgradeEvent        EventName = "statUpgrade"
 )

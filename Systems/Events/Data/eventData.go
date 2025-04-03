@@ -29,3 +29,8 @@ type AddMessageData struct {
 	Timer   float32
 	Color   rl.Color
 }
+
+type StatUpgradeData struct {
+	StatType string
+	Value    float32
+}
