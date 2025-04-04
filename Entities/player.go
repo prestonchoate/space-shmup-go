@@ -18,20 +18,20 @@ const DEFAULT_DAMAGE_TICKS = 15
 const DEFAULT_FIRE_RATE = 35
 
 type Player struct {
-    id          uuid.UUID
-    texture     rl.Texture2D
-    origin      rl.Vector2
-    srcRect     rl.Rectangle
-    destRect    rl.Rectangle
-    keyMap      systems_data.InputMap
-    projPool    ObjectPool[*Projectile]
-    projTex     rl.Texture2D
-    score       int
-    active      bool
-    damaged     bool
-    damageTicks int
-    fireDelay   float32
-    stats       PlayerStats
+	id          uuid.UUID
+	texture     rl.Texture2D
+	origin      rl.Vector2
+	srcRect     rl.Rectangle
+	destRect    rl.Rectangle
+	keyMap      systems_data.InputMap
+	projPool    ObjectPool[*Projectile]
+	projTex     rl.Texture2D
+	score       int
+	active      bool
+	damaged     bool
+	damageTicks int
+	fireDelay   float32
+	stats       PlayerStats
 }
 
 func CreatePlayer(keys systems_data.InputMap) *Player {
@@ -47,32 +47,33 @@ func CreatePlayer(keys systems_data.InputMap) *Player {
 	rl.SetTextureWrap(projTexture, rl.WrapRepeat)
 
 	p := &Player{
-        id:      uuid.New(),
-        texture: texture,
-        origin:  rl.Vector2{X: 0.0, Y: 0.0},
-        srcRect: rl.NewRectangle(0.0, 0.0, float32(texture.Width), float32(texture.Height)),
-        destRect: rl.NewRectangle(float32(texture.Width),
-            float32(rl.GetScreenHeight()-int(texture.Height)),
-            float32(texture.Width),
-            float32(texture.Height)),
-        keyMap: keys,
-        projPool: ObjectPool[*Projectile]{
-            activePool:   make(map[uuid.UUID]*Projectile),
-            inactivePool: make([]*Projectile, 0, 200),
-            createFn:     createProjectile,
-        },
-        projTex:     projTexture,
-        active:      true,
-        damageTicks: DEFAULT_DAMAGE_TICKS,
-        fireDelay:   0.0,
-        stats:       NewDefaultPlayerStats(),
-    }
-    
-    // Subscribe to events
-    events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, p.handleSettingsUpdate)
-    events.GetEventManagerInstance().Subscribe(events_data.StatUpgradeEvent, p.handleStatUpgrade)
-    
-    return p}
+		id:      uuid.New(),
+		texture: texture,
+		origin:  rl.Vector2{X: 0.0, Y: 0.0},
+		srcRect: rl.NewRectangle(0.0, 0.0, float32(texture.Width), float32(texture.Height)),
+		destRect: rl.NewRectangle(float32(texture.Width),
+			float32(rl.GetScreenHeight()-int(texture.Height)),
+			float32(texture.Width),
+			float32(texture.Height)),
+		keyMap: keys,
+		projPool: ObjectPool[*Projectile]{
+			activePool:   make(map[uuid.UUID]*Projectile),
+			inactivePool: make([]*Projectile, 0, 200),
+			createFn:     createProjectile,
+		},
+		projTex:     projTexture,
+		active:      true,
+		damageTicks: DEFAULT_DAMAGE_TICKS,
+		fireDelay:   0.0,
+		stats:       NewDefaultPlayerStats(),
+	}
+
+	// Subscribe to events
+	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, p.handleSettingsUpdate)
+	events.GetEventManagerInstance().Subscribe(events_data.StatUpgradeEvent, p.handleStatUpgrade)
+
+	return p
+}
 
 func (p *Player) handleSettingsUpdate(event events.Event) {
 	if data, ok := event.Data.(events_data.UpdateSettingsData); ok {
@@ -81,15 +82,15 @@ func (p *Player) handleSettingsUpdate(event events.Event) {
 }
 
 func (p *Player) Reset() {
-    p.stats = NewDefaultPlayerStats()
-    p.active = true
-    p.fireDelay = 0
-    p.damageTicks = DEFAULT_DAMAGE_TICKS
-    p.destRect = rl.NewRectangle(float32(p.texture.Width),
-        float32(rl.GetScreenHeight()-int(p.texture.Height)),
-        float32(p.texture.Width),
-        float32(p.texture.Height))
-    p.projPool.Reset()
+	p.stats = NewDefaultPlayerStats()
+	p.active = true
+	p.fireDelay = 0
+	p.damageTicks = DEFAULT_DAMAGE_TICKS
+	p.destRect = rl.NewRectangle(float32(p.texture.Width),
+		float32(rl.GetScreenHeight()-int(p.texture.Height)),
+		float32(p.texture.Width),
+		float32(p.texture.Height))
+	p.projPool.Reset()
 }
 
 func (p *Player) Draw() {
@@ -189,7 +190,7 @@ func (p *Player) handlePlayerInput(delta float32) {
 	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyEqual) {
 		events.GetEventManagerInstance().Emit(events_data.StatUpgradeEvent, events_data.StatUpgradeData{
 			StatType: "speed",
-			Value: 10,
+			Value:    10,
 		})
 	}
 }
@@ -217,12 +218,12 @@ func (p *Player) clampPlayerBounds() {
 	}
 }
 
-// TODO: Limit fire rate based on player stat
 func (p *Player) fire() {
 	if p.fireDelay < 10 {
 		return
 	}
 
+	// TODO: Change projectile to have a damage stat that is set by the player's damage stat when grabbed from the pool
 	proj := p.projPool.Get()
 	if proj.texture.ID == 0 {
 		proj.texture = p.projTex
@@ -255,37 +256,37 @@ func (p *Player) TakeDamage(dmg int) {
 }
 
 func (p *Player) handleStatUpgrade(event events.Event) {
-    if data, ok := event.Data.(events_data.StatUpgradeData); ok {
-        switch data.StatType {
-        case "speed":
-            p.stats.Speed += data.Value
-        case "damage":
-            p.stats.Damage += data.Value
-        case "health":
-            // Increase current and max health
-            p.stats.Health += int(data.Value)
-            p.stats.MaxHealth += int(data.Value)
-        case "fireRate":
-            // Lower value means faster firing
-            p.stats.FireRate -= data.Value
-            // Set a minimum value to prevent too fast firing
-            if p.stats.FireRate < 5 {
-                p.stats.FireRate = 5
-            }
-        case "size":
-            // Increase player size
-            p.stats.Size += data.Value
-            p.destRect.Width = float32(p.texture.Width) * p.stats.Size
-            p.destRect.Height = float32(p.texture.Height) * p.stats.Size
-        }
-        
-        // Emit a message to notify the player about the upgrade
-        events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
-            Message: data.StatType + " upgraded!",
-            Timer:   2.0,
-            Color:   rl.Green,
-        })
-    }
+	if data, ok := event.Data.(events_data.StatUpgradeData); ok {
+		switch data.StatType {
+		case "speed":
+			p.stats.Speed += data.Value
+		case "damage":
+			p.stats.Damage += data.Value
+		case "health":
+			// Increase current and max health
+			p.stats.Health += int(data.Value)
+			p.stats.MaxHealth += int(data.Value)
+		case "fireRate":
+			// Lower value means faster firing
+			p.stats.FireRate -= data.Value
+			// Set a minimum value to prevent too fast firing
+			if p.stats.FireRate < 5 {
+				p.stats.FireRate = 5
+			}
+		case "size":
+			// Increase player size
+			p.stats.Size += data.Value
+			p.destRect.Width = float32(p.texture.Width) * p.stats.Size
+			p.destRect.Height = float32(p.texture.Height) * p.stats.Size
+		}
+
+		// Emit a message to notify the player about the upgrade
+		events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+			Message: data.StatType + " upgraded!",
+			Timer:   2.0,
+			Color:   rl.Green,
+		})
+	}
 }
 
 func (p *Player) AddScore(score int) {
@@ -294,7 +295,6 @@ func (p *Player) AddScore(score int) {
 
 func (p *Player) DestroyProjectile(proj *Projectile) {
 	p.projPool.Return(proj)
-	p.score += 10
 }
 
 func (p *Player) Activate(active bool) {
