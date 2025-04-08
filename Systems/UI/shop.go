@@ -9,7 +9,14 @@ import (
 )
 
 type ShopScreen struct {
-	ScreenState map[string]any
+	ScreenState   map[string]any
+	glowShader    rl.Shader
+	shaderLoaded  bool
+	locGlowColor  int32
+	locResolution int32
+	locRectBounds int32
+	locSoftness   int32
+	locIntensity  int32
 }
 
 func (s *ShopScreen) Update(state map[string]any) {
@@ -19,12 +26,92 @@ func (s *ShopScreen) Update(state map[string]any) {
 	if h, exists := s.ScreenState["hoverStates"]; !exists || h == nil {
 		s.ScreenState["hoverStates"] = make(map[*systems_data.StatUpgrade]float32)
 	}
+
+	if !s.shaderLoaded {
+		s.initShaders()
+	}
+}
+
+// Initialize shaders used for glow effects
+func (s *ShopScreen) initShaders() {
+	// Vertex shader remains unchanged from default
+	vsCode := `
+	#version 330
+	in vec3 vertexPosition;
+	in vec2 vertexTexCoord;
+	in vec4 vertexColor;
+	out vec2 fragTexCoord;
+	out vec4 fragColor;
+	uniform mat4 mvp;
+	void main() {
+		fragTexCoord = vertexTexCoord;
+		fragColor = vertexColor;
+		gl_Position = mvp*vec4(vertexPosition, 1.0);
+	}`
+
+	// Fragment shader for rectangular glow effect
+	fsCode := `
+	#version 330
+	in vec2 fragTexCoord;
+	in vec4 fragColor;
+	out vec4 finalColor;
+	uniform vec4 glowColor;
+	uniform vec2 resolution;
+	uniform vec4 rectBounds;  // x, y, width, height
+	uniform float softness;
+	uniform float intensity;
+	
+	// Smoothstep function for soft edges
+	float boxSDF(vec2 p, vec2 size) {
+		vec2 d = abs(p) - size;
+		return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+	}
+	
+	void main() {
+		// Current fragment position (correcting Y-axis)
+		vec2 pixelPos = vec2(gl_FragCoord.x, resolution.y - gl_FragCoord.y);
+		
+		// Rectangle center
+		vec2 rectCenter = vec2(rectBounds.x + rectBounds.z/2.0, rectBounds.y + rectBounds.w/2.0);
+		
+		// Rectangle half size
+		vec2 halfSize = vec2(rectBounds.z, rectBounds.w) / 2.0;
+		
+		// Calculate distance from current pixel to rectangle
+		float dist = boxSDF(pixelPos - rectCenter, halfSize);
+		
+		// Create soft glow with configurable softness
+		float glow = exp(-dist * dist / (softness * softness)) * intensity;
+		
+		// Blend the glow with the base color
+		finalColor = mix(vec4(0,0,0,0), glowColor, glow);
+		finalColor.a = min(finalColor.a, glowColor.a * glow);
+	}`
+
+	s.glowShader = rl.LoadShaderFromMemory(vsCode, fsCode)
+
+	// Get shader uniform locations directly
+	s.locGlowColor = rl.GetShaderLocation(s.glowShader, "glowColor")
+	s.locResolution = rl.GetShaderLocation(s.glowShader, "resolution")
+	s.locRectBounds = rl.GetShaderLocation(s.glowShader, "rectBounds")
+	s.locSoftness = rl.GetShaderLocation(s.glowShader, "softness")
+	s.locIntensity = rl.GetShaderLocation(s.glowShader, "intensity")
+
+	s.shaderLoaded = true
+}
+
+// Clean up resources when the screen is closed or unloaded
+func (s *ShopScreen) CleanUp() {
+	if s.shaderLoaded {
+		rl.UnloadShader(s.glowShader)
+		s.shaderLoaded = false
+	}
 }
 
 func (s *ShopScreen) Draw() {
 	w, h := s.getScreenDimensions()
 	x := float32(w / 2)
-	y := float32(h / 10)
+	y := float32(h / 4)
 
 	// Save default styling for later restoration
 	defaultLabelAlign := raygui.GetStyle(raygui.DEFAULT, raygui.TEXT_ALIGNMENT)
@@ -97,8 +184,8 @@ func (s *ShopScreen) drawUpgradeCards(upgrades []*systems_data.StatUpgrade, y, w
 	}
 
 	const maxCardWidth = float32(200)
-	const minPadding = float32(20)
-	const rowSpacing = float32(30)
+	const minPadding = float32(50)
+	const rowSpacing = float32(60)
 	const cardHeight = float32(140)
 
 	startY := y + 30
@@ -194,7 +281,11 @@ func (s *ShopScreen) drawUpgradeCard(upgrade *systems_data.StatUpgrade, x, y, wi
 	glowAlpha := uint8(100 + 80*progress)
 	glowColor := upgrade.Tier.Color
 	glowColor.A = glowAlpha
-	s.drawCardGlowEffect(scaledRect, glowColor)
+	if upgrade.Tier.Name == "Common" {
+		s.drawCardGlowEffect(scaledRect, glowColor)
+	} else {
+		s.drawCardGlowEffectWithShader(scaledRect, glowColor)
+	}
 
 	// Draw the panel
 	raygui.Panel(scaledRect, upgrade.Tier.Name)
@@ -204,7 +295,69 @@ func (s *ShopScreen) drawUpgradeCard(upgrade *systems_data.StatUpgrade, x, y, wi
 	s.ScreenState["hoverStates"] = hoverStates
 }
 
-// Draws the glow effect for a card
+// Draws the glow effect for a card using shader
+func (s *ShopScreen) drawCardGlowEffectWithShader(panelRect rl.Rectangle, color rl.Color) {
+	if !s.shaderLoaded {
+		return
+	}
+
+	// Save current blend mode and set to additive for glow effect
+	rl.BeginBlendMode(rl.BlendAdditive)
+
+	// Expanded rectangle for the glow effect rendering area
+	glowSize := float32(40) // Larger glow size for more visible effect
+	glowRect := rl.Rectangle{
+		X:      panelRect.X - glowSize*.5,
+		Y:      panelRect.Y - glowSize*1.75,
+		Width:  panelRect.Width + 2*glowSize,
+		Height: panelRect.Height + 2*glowSize,
+	}
+
+	// Get screen dimensions for shader resolution
+	w, h := s.getScreenDimensions()
+	resolution := [2]float32{float32(w), float32(h)}
+
+	// Convert color to normalized floats for shader
+	colorVec := [4]float32{
+		float32(color.R) / 255.0,
+		float32(color.G) / 255.0,
+		float32(color.B) / 255.0,
+		float32(color.A) / 255.0,
+	}
+
+	// Set rectangle bounds for the shader
+	rectBounds := [4]float32{
+		panelRect.X, panelRect.Y,
+		panelRect.Width, panelRect.Height,
+	}
+
+	// Set shader uniforms using stored locations
+	rl.SetShaderValue(s.glowShader, s.locGlowColor, colorVec[:], rl.ShaderUniformVec4)
+	rl.SetShaderValue(s.glowShader, s.locResolution, resolution[:], rl.ShaderUniformVec2)
+	rl.SetShaderValue(s.glowShader, s.locRectBounds, rectBounds[:], rl.ShaderUniformVec4)
+
+	// Control the softness of the glow falloff
+	softness := float32(30.0) // Higher value = softer glow
+	rl.SetShaderValue(s.glowShader, s.locSoftness, []float32{softness}, rl.ShaderUniformFloat)
+
+	// Control the intensity of the glow
+	intensity := float32(1.8) // Higher value = brighter glow
+	rl.SetShaderValue(s.glowShader, s.locIntensity, []float32{intensity}, rl.ShaderUniformFloat)
+
+	// Begin shader mode
+	rl.BeginShaderMode(s.glowShader)
+
+	// Draw a rectangle with the shader applied
+	rl.DrawRectangleRec(glowRect, rl.White)
+
+	// End shader mode
+	rl.EndShaderMode()
+
+	// Restore previous blend mode
+	rl.EndBlendMode()
+}
+
+// Draw normal "glow" effect
 func (s *ShopScreen) drawCardGlowEffect(panelRect rl.Rectangle, color rl.Color) {
 	glowSize := float32(10)
 	glowColor := color
