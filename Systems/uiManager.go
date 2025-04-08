@@ -19,7 +19,7 @@ type UIManager struct {
 }
 
 type UIUpdate struct {
-	health     int
+	health     float32
 	score      int
 	enemyCount int
 	state      systems_data.GameState
@@ -27,6 +27,11 @@ type UIUpdate struct {
 }
 
 func CreateUIManager() *UIManager {
+
+	u := &UIManager{
+		messages: make([]*events_data.AddMessageData, 10),
+	}
+
 	screens := make(map[systems_data.GameState]ui.Screens)
 
 	screens[systems_data.Start] = &ui.MainMenuScreen{
@@ -53,11 +58,7 @@ func CreateUIManager() *UIManager {
 		ScreenState: make(map[string]any),
 	}
 
-	u := &UIManager{
-		screenList: screens,
-		messages:   make([]*events_data.AddMessageData, 10),
-	}
-
+	u.screenList = screens
 	events.GetEventManagerInstance().Subscribe(events_data.AddMessage, u.handleAddMessageEvent)
 	events.GetEventManagerInstance().Subscribe(events_data.SubmitHighScore, u.handleScoreSubmissionEvent)
 	return u
@@ -113,17 +114,17 @@ func (u *UIManager) Update(update UIUpdate) {
 	// Handle state-specific logic
 	switch update.state {
 	case systems_data.Start:
-		u.handleStartScreen(screen, screenState, update)
+		u.handleStartScreen(screen, screenState)
 	case systems_data.Playing:
 		u.handlePlayingScreen(screen, screenState, update)
 	case systems_data.Paused:
-		u.handlePausedScreen(screen, screenState, update)
+		u.handlePausedScreen(screen, screenState)
 	case systems_data.GameOver:
 		u.handleGameOverScreen(screen, screenState, update)
 	case systems_data.Settings:
-		u.handleSettingsScreen(screen, screenState, update)
+		u.handleSettingsScreen(screen, screenState)
 	case systems_data.Shop:
-		u.handleShopScreen(screen, screenState, update)
+		u.handleShopScreen(screen, screenState)
 	}
 
 	u.cleanupMessageQueue()
@@ -155,7 +156,7 @@ func (u *UIManager) resetGameOverScreen() {
 }
 
 // Handle start screen state
-func (u *UIManager) handleStartScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+func (u *UIManager) handleStartScreen(screen ui.Screens, screenState map[string]any) {
 	if startButtonPressed, exists := screenState["startButtonPressed"].(bool); exists && startButtonPressed {
 		screenState["startButtonPressed"] = false
 		screen.Update(screenState)
@@ -180,7 +181,7 @@ func (u *UIManager) handlePlayingScreen(screen ui.Screens, screenState map[strin
 }
 
 // Handle paused screen state
-func (u *UIManager) handlePausedScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+func (u *UIManager) handlePausedScreen(screen ui.Screens, screenState map[string]any) {
 	if exitButtonPressed, exists := screenState["exitButtonPressed"].(bool); exists && exitButtonPressed {
 		u.changeGameState(systems_data.Exit)
 		return
@@ -224,7 +225,7 @@ func (u *UIManager) handleGameOverScreen(screen ui.Screens, screenState map[stri
 }
 
 // Handle settings screen state
-func (u *UIManager) handleSettingsScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+func (u *UIManager) handleSettingsScreen(screen ui.Screens, screenState map[string]any) {
 	if backButtonPressed, exists := screenState["back"].(bool); exists && backButtonPressed {
 		screenState["back"] = false
 		screen.Update(screenState)
@@ -246,13 +247,13 @@ func (u *UIManager) handleSettingsScreen(screen ui.Screens, screenState map[stri
 }
 
 // Handle shop screen state
-func (u *UIManager) handleShopScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+func (u *UIManager) handleShopScreen(screen ui.Screens, screenState map[string]any) {
 	// TODO: check if upgrades need to be spawned
 
 	spawned, exists := screenState["spawnedUpgrades"].(bool)
 	if !exists || !spawned {
 		// TODO: get number of upgrades from somewhere?
-		upgrades := GetUpgrader().GetUpgrades(50)
+		upgrades := GetUpgrader().GetUpgrades(3)
 		screenState["upgrades"] = upgrades
 		screenState["spawnedUpgrades"] = true
 		screen.Update(screenState)
@@ -260,10 +261,22 @@ func (u *UIManager) handleShopScreen(screen ui.Screens, screenState map[string]a
 
 	rerollButtonPressed, exists := screenState["rerollButtonPressed"].(bool)
 	if exists && rerollButtonPressed {
-		upgrades := GetUpgrader().GetUpgrades(50)
+		upgrades := GetUpgrader().GetUpgrades(3)
 		screenState["upgrades"] = upgrades
 		screenState["spawnedUpgrades"] = true
 		screen.Update(screenState)
+	}
+
+	upgrade, exists := screenState["selectedUpgrade"].(*systems_data.StatUpgrade)
+	if exists && upgrade != nil {
+		events.GetEventManagerInstance().Emit(events_data.StatUpgradeEvent, events_data.StatUpgradeData{
+			Upgrade: upgrade,
+		})
+		u.playConfirmSound()
+		screenState["selectedUpgrade"] = nil
+		screenState["spawnedUpgrades"] = false
+		screen.Update(screenState)
+		u.changeGameState(systems_data.Playing)
 	}
 }
 

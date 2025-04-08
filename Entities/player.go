@@ -1,9 +1,9 @@
 package entities
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
-	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
@@ -18,20 +18,21 @@ const DEFAULT_DAMAGE_TICKS = 15
 const DEFAULT_FIRE_RATE = 35
 
 type Player struct {
-	id          uuid.UUID
-	texture     rl.Texture2D
-	origin      rl.Vector2
-	srcRect     rl.Rectangle
-	destRect    rl.Rectangle
-	keyMap      systems_data.InputMap
-	projPool    ObjectPool[*Projectile]
-	projTex     rl.Texture2D
-	score       int
-	active      bool
-	damaged     bool
-	damageTicks int
-	fireDelay   float32
-	stats       PlayerStats
+	id           uuid.UUID
+	texture      rl.Texture2D
+	origin       rl.Vector2
+	srcRect      rl.Rectangle
+	destRect     rl.Rectangle
+	keyMap       systems_data.InputMap
+	projPool     ObjectPool[*Projectile]
+	projTex      rl.Texture2D
+	score        int
+	active       bool
+	damaged      bool
+	damageTicks  int
+	fireDelay    float32
+	stats        PlayerStats
+	displayStats bool
 }
 
 func CreatePlayer(keys systems_data.InputMap) *Player {
@@ -102,6 +103,10 @@ func (p *Player) Draw() {
 		return
 	}
 
+	if p.displayStats {
+		p.drawStats()
+	}
+
 	tint := rl.White
 	if p.damaged {
 		tint = rl.Red
@@ -112,6 +117,29 @@ func (p *Player) Draw() {
 	}
 
 	rl.DrawTexturePro(p.texture, p.srcRect, p.destRect, p.origin, 0, tint)
+}
+
+func (p *Player) drawStats() {
+	// Draw player stats on the right-hand side
+	statsX := float32(rl.GetScreenWidth() - 200) // 200 pixels from the right
+	statsY := float32(80)                        // starting Y position
+	lineHeight := float32(20)
+
+	rl.DrawText("== PLAYER STATS ==", int32(statsX), int32(statsY), 20, rl.Yellow)
+	statsY += lineHeight
+
+	rl.DrawText(fmt.Sprintf("Health: %.0f / %.0f", p.stats.Health, p.stats.MaxHealth), int32(statsX), int32(statsY), 18, rl.White)
+	statsY += lineHeight
+	rl.DrawText(fmt.Sprintf("Speed: %.2f", p.stats.Speed), int32(statsX), int32(statsY), 18, rl.White)
+	statsY += lineHeight
+	rl.DrawText(fmt.Sprintf("Fire Rate: %.2f", p.stats.FireRate), int32(statsX), int32(statsY), 18, rl.White)
+	statsY += lineHeight
+	rl.DrawText(fmt.Sprintf("Damage: %.2f", p.stats.Damage), int32(statsX), int32(statsY), 18, rl.White)
+	statsY += lineHeight
+	rl.DrawText(fmt.Sprintf("Size: %.2f", p.stats.Size), int32(statsX), int32(statsY), 18, rl.White)
+	statsY += lineHeight
+	rl.DrawText(fmt.Sprintf("Score: %d", p.score), int32(statsX), int32(statsY), 18, rl.Green)
+
 }
 
 func (p *Player) Update(delta float32) {
@@ -179,19 +207,8 @@ func (p *Player) handlePlayerInput(delta float32) {
 		p.TakeDamage(10000000)
 	}
 
-	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyPageUp) {
-		events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
-			Message: "Sample Data" + time.Now().String(),
-			Timer:   2.0,
-			Color:   rl.DarkGreen,
-		})
-	}
-
-	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyEqual) {
-		events.GetEventManagerInstance().Emit(events_data.StatUpgradeEvent, events_data.StatUpgradeData{
-			StatType: "speed",
-			Value:    10,
-		})
+	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyInsert) {
+		p.displayStats = !p.displayStats
 	}
 }
 
@@ -244,7 +261,7 @@ func (p *Player) fire() {
 	p.fireDelay = 0.0
 }
 
-func (p *Player) TakeDamage(dmg int) {
+func (p *Player) TakeDamage(dmg float32) {
 	if !p.damaged {
 		p.stats.Health -= dmg
 		p.damaged = true
@@ -257,32 +274,54 @@ func (p *Player) TakeDamage(dmg int) {
 
 func (p *Player) handleStatUpgrade(event events.Event) {
 	if data, ok := event.Data.(events_data.StatUpgradeData); ok {
-		switch data.StatType {
-		case "speed":
-			p.stats.Speed += data.Value
-		case "damage":
-			p.stats.Damage += data.Value
-		case "health":
-			// Increase current and max health
-			p.stats.Health += int(data.Value)
-			p.stats.MaxHealth += int(data.Value)
-		case "fireRate":
-			// Lower value means faster firing
-			p.stats.FireRate -= data.Value
-			// Set a minimum value to prevent too fast firing
-			if p.stats.FireRate < 5 {
-				p.stats.FireRate = 5
+		amt := data.Upgrade.Amount
+		if data.Upgrade.Type == systems_data.Multiplier {
+			amt += 1.0
+		}
+		switch data.Upgrade.StatName {
+		case "Speed":
+			if data.Upgrade.Type == systems_data.FlatAmount {
+				p.stats.Speed += amt
+			} else {
+				p.stats.Speed *= amt
 			}
-		case "size":
+		case "Damage":
+			if data.Upgrade.Type == systems_data.FlatAmount {
+				p.stats.Damage += amt
+			} else {
+				p.stats.Damage *= amt
+			}
+		case "MaxHealth":
+			if data.Upgrade.Type == systems_data.FlatAmount {
+				p.stats.MaxHealth += amt
+				p.stats.Health += amt
+			} else {
+				p.stats.MaxHealth *= amt
+				p.stats.MaxHealth *= amt
+			}
+		case "FireRate":
+			if data.Upgrade.Type == systems_data.FlatAmount {
+				p.stats.FireRate += amt
+			} else {
+				p.stats.FireRate *= amt
+			}
+			if p.stats.FireRate > 100 {
+				p.stats.FireRate = 100
+			}
+		case "Size":
 			// Increase player size
-			p.stats.Size += data.Value
+			if data.Upgrade.Type == systems_data.FlatAmount {
+				p.stats.Size -= amt
+			} else {
+				p.stats.Size = p.stats.Size - (p.stats.Size * data.Upgrade.Amount)
+			}
 			p.destRect.Width = float32(p.texture.Width) * p.stats.Size
 			p.destRect.Height = float32(p.texture.Height) * p.stats.Size
 		}
 
 		// Emit a message to notify the player about the upgrade
 		events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
-			Message: data.StatType + " upgraded!",
+			Message: data.Upgrade.StatName + " upgraded!",
 			Timer:   2.0,
 			Color:   rl.Green,
 		})
@@ -309,7 +348,7 @@ func (p *Player) GetProjeciles() map[uuid.UUID]*Projectile {
 	return p.projPool.activePool
 }
 
-func (p *Player) GetHealth() int {
+func (p *Player) GetHealth() float32 {
 	return p.stats.Health
 }
 

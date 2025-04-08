@@ -33,9 +33,15 @@ type StatUpgrade struct {
 func (s *StatUpgrade) String() string {
 	pct := ""
 	amt := s.Amount
+	firstWord := ""
+	if s.StatName == "Size" {
+		firstWord = "Decrease"
+	} else {
+		firstWord = "Increase"
+	}
 	if s.Type == Multiplier {
 		pct = "%"
 		amt = s.Amount * 100
 	}
-	return fmt.Sprintf("Upgrade %s by %.2f%s", s.StatName, amt, pct)
+	return fmt.Sprintf("%s %s by %.2f%s", firstWord, s.StatName, amt, pct)
 }

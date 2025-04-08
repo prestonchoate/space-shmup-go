@@ -16,6 +16,9 @@ func (s *ShopScreen) Update(state map[string]any) {
 	for key, val := range state {
 		s.ScreenState[key] = val
 	}
+	if h, exists := s.ScreenState["hoverStates"]; !exists || h == nil {
+		s.ScreenState["hoverStates"] = make(map[*systems_data.StatUpgrade]float32)
+	}
 }
 
 func (s *ShopScreen) Draw() {
@@ -27,10 +30,10 @@ func (s *ShopScreen) Draw() {
 	defaultLabelAlign := raygui.GetStyle(raygui.DEFAULT, raygui.TEXT_ALIGNMENT)
 
 	// Draw the shop header
-	s.drawShopHeader(x, y, w)
+	s.drawShopHeader(y, w)
 
 	// Draw upgrade options if available
-	s.drawUpgradeOptions(x, y, w, h)
+	s.drawUpgradeOptions(x, y, w)
 
 	// Restore default styling
 	raygui.SetStyle(raygui.DEFAULT, raygui.TEXT_ALIGNMENT, defaultLabelAlign)
@@ -45,7 +48,7 @@ func (s *ShopScreen) getScreenDimensions() (int, int) {
 }
 
 // Draws the "SHOP" header text
-func (s *ShopScreen) drawShopHeader(x, y float32, w int) {
+func (s *ShopScreen) drawShopHeader(y float32, w int) {
 	defaultLabelTextSize := raygui.GetStyle(raygui.DEFAULT, raygui.TEXT_SIZE)
 	raygui.SetStyle(raygui.DEFAULT, raygui.TEXT_SIZE, 60)
 
@@ -65,7 +68,7 @@ func (s *ShopScreen) drawShopHeader(x, y float32, w int) {
 }
 
 // Draws the upgrade options or a message if none are available
-func (s *ShopScreen) drawUpgradeOptions(x, y float32, w, h int) {
+func (s *ShopScreen) drawUpgradeOptions(x, y float32, w int) {
 	upgrades, exists := s.ScreenState["upgrades"].([]*systems_data.StatUpgrade)
 
 	if !exists {
@@ -73,8 +76,8 @@ func (s *ShopScreen) drawUpgradeOptions(x, y float32, w, h int) {
 		return
 	}
 
-	lastY := s.drawUpgradeCards(upgrades, x, y, float32(w), float32(h))
-	s.drawRerollButton(x, lastY, float32(w), float32(h), upgrades)
+	lastY := s.drawUpgradeCards(upgrades, y, float32(w))
+	s.drawRerollButton(x, lastY)
 }
 
 // Draws a message when no upgrades are available
@@ -88,7 +91,7 @@ func (s *ShopScreen) drawNoUpgradesMessage(x, y float32, w int) {
 }
 
 // Draws the upgrade cards in a row
-func (s *ShopScreen) drawUpgradeCards(upgrades []*systems_data.StatUpgrade, x, y, w, h float32) float32 {
+func (s *ShopScreen) drawUpgradeCards(upgrades []*systems_data.StatUpgrade, y, w float32) float32 {
 	if len(upgrades) == 0 {
 		return 0
 	}
@@ -141,21 +144,64 @@ func (s *ShopScreen) drawUpgradeCards(upgrades []*systems_data.StatUpgrade, x, y
 
 // Draws a single upgrade card with glow effect
 func (s *ShopScreen) drawUpgradeCard(upgrade *systems_data.StatUpgrade, x, y, width, height float32) {
-	raygui.SetStyle(raygui.LABEL, raygui.TEXT_ALIGNMENT, raygui.TEXT_ALIGN_CENTER)
-
-	panelRect := rl.Rectangle{
-		X:      x,
-		Y:      y,
-		Width:  width,
-		Height: height,
+	hoverStates, exists := s.ScreenState["hoverStates"].(map[*systems_data.StatUpgrade]float32)
+	if !exists || hoverStates == nil {
+		hoverStates = map[*systems_data.StatUpgrade]float32{}
+		s.ScreenState["hoverStates"] = hoverStates
 	}
 
-	// Draw the glow effect
-	s.drawCardGlowEffect(panelRect, upgrade.Tier.Color)
+	raygui.SetStyle(raygui.LABEL, raygui.TEXT_ALIGNMENT, raygui.TEXT_ALIGN_CENTER)
 
-	// Draw the panel and its contents
-	raygui.Panel(panelRect, upgrade.Tier.Name)
-	s.drawCardContent(x, y, width, height, panelRect, upgrade)
+	mouse := rl.GetMousePosition()
+	cardRect := rl.Rectangle{X: x, Y: y, Width: width, Height: height}
+	hovered := rl.CheckCollisionPointRec(mouse, cardRect)
+
+	// Animate hover
+	const animSpeed = float32(0.1)
+	progress := hoverStates[upgrade]
+	if hovered {
+		progress += animSpeed
+		if progress > 1 {
+			progress = 1
+		}
+	} else {
+		progress -= animSpeed
+		if progress < 0 {
+			progress = 0
+		}
+	}
+	hoverStates[upgrade] = progress
+
+	// Apply scaling
+	scale := 1 + 0.05*progress
+	scaledWidth := width * scale
+	scaledHeight := height * scale
+	scaledX := x - (scaledWidth-width)/2
+	scaledY := y - (scaledHeight-height)/2
+	scaledRect := rl.Rectangle{
+		X:      scaledX,
+		Y:      scaledY,
+		Width:  scaledWidth,
+		Height: scaledHeight,
+	}
+
+	// Handle click
+	if hovered && rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+		s.ScreenState["selectedUpgrade"] = upgrade
+	}
+
+	// More glow when hovered
+	glowAlpha := uint8(100 + 80*progress)
+	glowColor := upgrade.Tier.Color
+	glowColor.A = glowAlpha
+	s.drawCardGlowEffect(scaledRect, glowColor)
+
+	// Draw the panel
+	raygui.Panel(scaledRect, upgrade.Tier.Name)
+
+	// Draw content inside
+	s.drawCardContent(scaledX, scaledY, scaledHeight, scaledRect, upgrade)
+	s.ScreenState["hoverStates"] = hoverStates
 }
 
 // Draws the glow effect for a card
@@ -174,7 +220,7 @@ func (s *ShopScreen) drawCardGlowEffect(panelRect rl.Rectangle, color rl.Color) 
 }
 
 // Draws the content of an upgrade card
-func (s *ShopScreen) drawCardContent(x, y, width, height float32, panelRect rl.Rectangle, upgrade *systems_data.StatUpgrade) {
+func (s *ShopScreen) drawCardContent(x, y, height float32, panelRect rl.Rectangle, upgrade *systems_data.StatUpgrade) {
 	titleFontSize := raygui.GetStyle(raygui.DEFAULT, raygui.TEXT_SIZE)
 	sidePadding := float32(10)
 	topPadding := float32(10)
@@ -191,7 +237,7 @@ func (s *ShopScreen) drawCardContent(x, y, width, height float32, panelRect rl.R
 }
 
 // Draws the reroll button
-func (s *ShopScreen) drawRerollButton(x, y, w, h float32, upgrades []*systems_data.StatUpgrade) {
+func (s *ShopScreen) drawRerollButton(x, y float32) {
 	buttonWidth := float32(150)
 	buttonHeight := float32(30)
 	paddingTop := float32(30)

@@ -31,6 +31,5 @@ type AddMessageData struct {
 }
 
 type StatUpgradeData struct {
-	StatType string
-	Value    float32
+	Upgrade *systems_data.StatUpgrade
 }

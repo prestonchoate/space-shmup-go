@@ -58,10 +58,9 @@ func (u *UpgradeManager) GetUpgrade() *systems_data.StatUpgrade {
 
 	// Define base amounts per stat and tier (very basic for demo)
 	base := map[string]float32{
-		"Speed":     0.2,
-		"Health":    5,
+		"Speed":     10,
 		"MaxHealth": 5,
-		"FireRate":  0.1,
+		"FireRate":  3,
 		"Damage":    1.5,
 		"Size":      0.1,
 	}
@@ -124,6 +123,6 @@ func (u *UpgradeManager) getRandomUpgradeType() systems_data.UpgradeType {
 }
 
 func (u *UpgradeManager) getRandomStatName() string {
-	stats := []string{"Speed", "Health", "MaxHealth", "FireRate", "Damage", "Size"}
+	stats := []string{"Speed", "MaxHealth", "FireRate", "Damage", "Size"}
 	return stats[GetRandomizer().GetNumber(int32(len(stats)))]
 }

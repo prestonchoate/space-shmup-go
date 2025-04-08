@@ -3,16 +3,11 @@ package entities
 // PlayerStats encapsulates all statistics for the player
 type PlayerStats struct {
 	Speed     float32
-	Health    int
-	MaxHealth int
+	Health    float32
+	MaxHealth float32
 	FireRate  float32
 	Damage    float32
 	Size      float32
-	// You can add more stats here as needed
-	// Examples:
-	// CritChance  float32
-	// ShieldValue int
-	// ReloadSpeed float32
 }
 
 // NewDefaultPlayerStats creates a new PlayerStats with default values

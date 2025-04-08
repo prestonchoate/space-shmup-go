@@ -27,7 +27,7 @@ func (c *CollisionManager) checkPlayerCollision() {
 	for _, e := range c.enemyManager.GetEnemies() {
 		if checkCollisionRecs(c.player.GetRect(), e.GetRect()) {
 			c.enemyManager.DestroyEnemy(e)
-			c.player.TakeDamage(e.GetDamage())
+			c.player.TakeDamage(float32(e.GetDamage()))
 		}
 	}
 }
