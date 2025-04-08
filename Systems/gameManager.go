@@ -83,7 +83,7 @@ func (gm *GameManager) Update() {
 
 func (gm *GameManager) Draw() {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.Black)
+	rl.ClearBackground(rl.White)
 	for _, entity := range gm.entities {
 		entity.Draw()
 	}
@@ -93,6 +93,18 @@ func (gm *GameManager) Draw() {
 }
 
 func (gm *GameManager) handleButtonInputs() {
+	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyF7) {
+		/*
+			u := GetUpgrader().GetUpgrade()
+			events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
+				Message: u.String(),
+				Timer:   4.0,
+				Color:   u.Tier.Color,
+			})
+		*/
+		gm.state = systems_data.Shop
+	}
+
 	switch gm.state {
 	case systems_data.Playing:
 		if rl.IsKeyPressed(rl.KeyEscape) {

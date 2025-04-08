@@ -9,7 +9,7 @@ const (
 	Loading
 	Paused
 	Playing
-	Menu
+	Shop
 	GameOver
 	Restart
 	Exit

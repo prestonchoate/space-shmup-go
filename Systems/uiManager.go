@@ -49,6 +49,10 @@ func CreateUIManager() *UIManager {
 		ScreenState: make(map[string]any),
 	}
 
+	screens[systems_data.Shop] = &ui.ShopScreen{
+		ScreenState: make(map[string]any),
+	}
+
 	u := &UIManager{
 		screenList: screens,
 		messages:   make([]*events_data.AddMessageData, 10),
@@ -67,6 +71,11 @@ func (u *UIManager) HandleGameStateRender(state systems_data.GameState) {
 
 	msgX := rl.GetScreenWidth()
 	msgY := rl.GetScreenHeight() - 30
+
+	if rl.IsWindowFullscreen() {
+		msgX = rl.GetMonitorWidth(rl.GetCurrentMonitor())
+		msgY = rl.GetMonitorHeight(rl.GetCurrentMonitor()) - 30
+	}
 	padding := 20
 
 	for _, msg := range u.messages {
@@ -87,142 +96,183 @@ func (u *UIManager) Update(update UIUpdate) {
 		"enemyCount": update.enemyCount,
 	}
 
-	// reduce timer on each message by delta
+	u.updateMessageTimers(update.delta)
+
+	if update.state != systems_data.GameOver {
+		u.resetGameOverScreen()
+	}
+
+	screen, exists := u.screenList[update.state]
+	if !exists {
+		return
+	}
+
+	screen.Update(screenUpdate)
+	screenState := screen.GetScreenState()
+
+	// Handle state-specific logic
+	switch update.state {
+	case systems_data.Start:
+		u.handleStartScreen(screen, screenState, update)
+	case systems_data.Playing:
+		u.handlePlayingScreen(screen, screenState, update)
+	case systems_data.Paused:
+		u.handlePausedScreen(screen, screenState, update)
+	case systems_data.GameOver:
+		u.handleGameOverScreen(screen, screenState, update)
+	case systems_data.Settings:
+		u.handleSettingsScreen(screen, screenState, update)
+	case systems_data.Shop:
+		u.handleShopScreen(screen, screenState, update)
+	}
+
+	u.cleanupMessageQueue()
+}
+
+// Helper function to update message timers
+func (u *UIManager) updateMessageTimers(delta float32) {
 	for idx, msg := range u.messages {
 		if msg == nil {
 			continue
 		}
-		msg.Timer = msg.Timer - update.delta
+		msg.Timer = msg.Timer - delta
 		if msg.Timer <= 0 {
 			u.messages[idx] = nil
 			continue
 		}
 		u.messages[idx] = msg
 	}
+}
 
-	screen, exists := u.screenList[update.state]
-	if update.state != systems_data.GameOver {
-		// Remove score submission value from game over screen state
-		s, exists := u.screenList[systems_data.GameOver]
-		if exists {
-			state := s.GetScreenState()
-			delete(state, "scoreSubmitted")
-			s.Update(state)
-		}
-	}
+// Helper function to reset game over screen
+func (u *UIManager) resetGameOverScreen() {
+	s, exists := u.screenList[systems_data.GameOver]
 	if exists {
-		screen.Update(screenUpdate)
-		screenState := screen.GetScreenState()
-		switch update.state {
-		case systems_data.Start:
-			startButtonPressed, exists := screenState["startButtonPressed"].(bool)
-			if exists && startButtonPressed {
-				screenState["startButtonPressed"] = false
-				screen.Update(screenState)
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Playing,
-				})
-				u.playConfirmSound()
-				break
-			}
-			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
-			if exists && exitButtonPressed {
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Exit,
-				})
-				u.playConfirmSound()
-				break
-			}
-			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
-			if exists && settingsButtonPressed {
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Settings,
-				})
-				u.playConfirmSound()
-				break
-			}
-			break
-		case systems_data.Playing:
-			break
-		case systems_data.Paused:
-			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
-			if exists && exitButtonPressed {
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Exit,
-				})
-				u.playConfirmSound()
-				break
-			}
-			settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool)
-			if exists && settingsButtonPressed {
-				screenState["settingsButtonPressed"] = false
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Settings,
-				})
-				u.playConfirmSound()
-				break
-			}
-			break
-		case systems_data.GameOver:
-			restartButtonPressed, exists := screenState["restartButtonPressed"].(bool)
-			if exists && restartButtonPressed {
-				screenState["restartButtonPressed"] = false
-				screen.Update(screenState)
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Restart,
-				})
-				u.playConfirmSound()
-				break
-			}
-			exitButtonPressed, exists := screenState["exitButtonPressed"].(bool)
-			if exists && exitButtonPressed {
-				events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
-					NewState: systems_data.Exit,
-				})
-				u.playConfirmSound()
-				break
-			}
-			submitButtonPressed, exists := screenState["submitButtonPressed"].(bool)
-			if exists && submitButtonPressed {
-				initials, exists := screenState["playerInitials"].(string)
-				if exists && len(initials) > 0 {
-					events.GetEventManagerInstance().Emit(events_data.SubmitHighScore, events_data.HighScoreData{
-						Initials: initials,
-						Score:    int64(update.score),
-					})
-					u.playConfirmSound()
-					screenState["scoreSubmitted"] = true
-					screenState["submitButtonPressed"] = false
-					screen.Update(screenState)
-				}
-			}
-			break
-		case systems_data.Settings:
-			backButtonPressed, exists := screenState["back"].(bool)
-			if exists && backButtonPressed {
-				screenState["back"] = false
-				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
-				u.playConfirmSound()
-				break
-			}
-			saveButtonPressed, exists := screenState["save"].(bool)
-			if exists && saveButtonPressed {
-				screenState["save"] = false
-				settings, exists := screenState["settings"].(*systems_data.GameSettings)
-				if exists {
-					saveManager.GetInstance().UpdateSettings(settings)
-				}
-				events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
-				u.playConfirmSound()
-				break
-			}
-			break
-		default:
-			break
-		}
+		state := s.GetScreenState()
+		delete(state, "scoreSubmitted")
+		s.Update(state)
+	}
+}
+
+// Handle start screen state
+func (u *UIManager) handleStartScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+	if startButtonPressed, exists := screenState["startButtonPressed"].(bool); exists && startButtonPressed {
+		screenState["startButtonPressed"] = false
+		screen.Update(screenState)
+		u.changeGameState(systems_data.Playing)
+		return
 	}
 
-	u.cleanupMessageQueue()
+	if exitButtonPressed, exists := screenState["exitButtonPressed"].(bool); exists && exitButtonPressed {
+		u.changeGameState(systems_data.Exit)
+		return
+	}
+
+	if settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool); exists && settingsButtonPressed {
+		u.changeGameState(systems_data.Settings)
+		return
+	}
+}
+
+// Handle playing screen state
+func (u *UIManager) handlePlayingScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+	// Currently empty as there's no logic in the original function
+}
+
+// Handle paused screen state
+func (u *UIManager) handlePausedScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+	if exitButtonPressed, exists := screenState["exitButtonPressed"].(bool); exists && exitButtonPressed {
+		u.changeGameState(systems_data.Exit)
+		return
+	}
+
+	if settingsButtonPressed, exists := screenState["settingsButtonPressed"].(bool); exists && settingsButtonPressed {
+		screenState["settingsButtonPressed"] = false
+		screen.Update(screenState)
+		u.changeGameState(systems_data.Settings)
+		return
+	}
+}
+
+// Handle game over screen state
+func (u *UIManager) handleGameOverScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+	if restartButtonPressed, exists := screenState["restartButtonPressed"].(bool); exists && restartButtonPressed {
+		screenState["restartButtonPressed"] = false
+		screen.Update(screenState)
+		u.changeGameState(systems_data.Restart)
+		return
+	}
+
+	if exitButtonPressed, exists := screenState["exitButtonPressed"].(bool); exists && exitButtonPressed {
+		u.changeGameState(systems_data.Exit)
+		return
+	}
+
+	if submitButtonPressed, exists := screenState["submitButtonPressed"].(bool); exists && submitButtonPressed {
+		initials, exists := screenState["playerInitials"].(string)
+		if exists && len(initials) > 0 {
+			events.GetEventManagerInstance().Emit(events_data.SubmitHighScore, events_data.HighScoreData{
+				Initials: initials,
+				Score:    int64(update.score),
+			})
+			u.playConfirmSound()
+			screenState["scoreSubmitted"] = true
+			screenState["submitButtonPressed"] = false
+			screen.Update(screenState)
+		}
+	}
+}
+
+// Handle settings screen state
+func (u *UIManager) handleSettingsScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+	if backButtonPressed, exists := screenState["back"].(bool); exists && backButtonPressed {
+		screenState["back"] = false
+		screen.Update(screenState)
+		events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
+		u.playConfirmSound()
+		return
+	}
+
+	if saveButtonPressed, exists := screenState["save"].(bool); exists && saveButtonPressed {
+		screenState["save"] = false
+		screen.Update(screenState)
+		if settings, exists := screenState["settings"].(*systems_data.GameSettings); exists {
+			saveManager.GetInstance().UpdateSettings(settings)
+		}
+		events.GetEventManagerInstance().Emit(events_data.ReturnGameState, events_data.ReturnStateData{})
+		u.playConfirmSound()
+		return
+	}
+}
+
+// Handle shop screen state
+func (u *UIManager) handleShopScreen(screen ui.Screens, screenState map[string]any, update UIUpdate) {
+	// TODO: check if upgrades need to be spawned
+
+	spawned, exists := screenState["spawnedUpgrades"].(bool)
+	if !exists || !spawned {
+		// TODO: get number of upgrades from somewhere?
+		upgrades := GetUpgrader().GetUpgrades(50)
+		screenState["upgrades"] = upgrades
+		screenState["spawnedUpgrades"] = true
+		screen.Update(screenState)
+	}
+
+	rerollButtonPressed, exists := screenState["rerollButtonPressed"].(bool)
+	if exists && rerollButtonPressed {
+		upgrades := GetUpgrader().GetUpgrades(50)
+		screenState["upgrades"] = upgrades
+		screenState["spawnedUpgrades"] = true
+		screen.Update(screenState)
+	}
+}
+
+// Helper function to change game state
+func (u *UIManager) changeGameState(newState systems_data.GameState) {
+	events.GetEventManagerInstance().Emit(events_data.ChangeGameState, events_data.ChangeStateData{
+		NewState: newState,
+	})
+	u.playConfirmSound()
 }
 
 func (u *UIManager) playConfirmSound() {
