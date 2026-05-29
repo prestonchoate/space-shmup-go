@@ -36,3 +36,7 @@ func (op *ObjectPool[T]) Reset() {
 		delete(op.activePool, o.GetID())
 	}
 }
+
+func (op *ObjectPool[T]) GetActiveCount() int {
+	return len(op.activePool)
+}

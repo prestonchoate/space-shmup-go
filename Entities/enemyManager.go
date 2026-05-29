@@ -7,15 +7,18 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/google/uuid"
 	assets "github.com/prestonchoate/space-shmup/Systems/Assets"
+	events "github.com/prestonchoate/space-shmup/Systems/Events"
+	events_data "github.com/prestonchoate/space-shmup/Systems/Events/Data"
 	"github.com/prestonchoate/space-shmup/Systems/saveManager"
 )
 
 type EnemyManager struct {
-	enemies       ObjectPool[*Enemy]
-	id            uuid.UUID
-	enemyTextures []rl.Texture2D
-	enemyCount    int
-	active        bool
+	enemies          ObjectPool[*Enemy]
+	id               uuid.UUID
+	enemyTextures    []rl.Texture2D
+	enemyCount       int
+	active           bool
+	waveCompleteFlag bool
 }
 
 func (em *EnemyManager) Reset() {
@@ -36,28 +39,42 @@ func (em *EnemyManager) Update(delta float32) {
 	if !em.active {
 		return
 	}
-	for _, e := range em.enemies.activePool {
-		if e.texture.ID <= 0 {
-			randIndex := rand.Intn(len(em.enemyTextures))
-			e.texture = em.enemyTextures[randIndex]
-			e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
-			startX := rl.GetRandomValue(e.texture.Width+10, int32(rl.GetScreenWidth())-e.texture.Width-10)
-			startY := rl.GetRandomValue(-600, -100)
-			e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width)*.66, float32(e.texture.Height)*.66)
+
+	if em.GetEnemyCount() <= 0 {
+		if !em.waveCompleteFlag {
+			em.waveCompleteFlag = true
+			events.GetEventManagerInstance().Emit(events_data.WaveCompleteEvent, events_data.WaveCompleteData{})
 		}
-		e.Update(delta)
+	} else {
+		for _, e := range em.enemies.activePool {
+			if e.texture.ID <= 0 {
+				em.initEnemy(e)
+			}
+			e.Update(delta)
+		}
 	}
 }
 
+func (em *EnemyManager) initEnemy(e *Enemy) {
+	randIndex := rand.Intn(len(em.enemyTextures))
+	e.texture = em.enemyTextures[randIndex]
+	e.srcRect = rl.NewRectangle(0.0, 0.0, float32(e.texture.Width), float32(e.texture.Height))
+	startX := rl.GetRandomValue(e.texture.Width+10, int32(rl.GetScreenWidth())-e.texture.Width-10)
+	startY := rl.GetRandomValue(-600, -100)
+	e.destRect = rl.NewRectangle(float32(startX), float32(startY), float32(e.texture.Width)*.66, float32(e.texture.Height)*.66)
+}
+
 func (em *EnemyManager) SpawnNewEnemies(level int) {
+	activeCount := em.GetEnemyCount()
 	totalCount := level * em.enemyCount
-	if len(em.enemies.activePool) < totalCount {
-		newSpawns := totalCount - len(em.enemies.activePool)
+	if activeCount < totalCount {
+		newSpawns := totalCount - activeCount
 		log.Printf("Enemy Manager: Spawning %d new enemies\n", newSpawns)
 		for range newSpawns {
 			_ = em.enemies.Get()
 		}
 	}
+	em.waveCompleteFlag = false
 }
 
 func (em *EnemyManager) GetID() uuid.UUID {
@@ -88,7 +105,13 @@ func (em *EnemyManager) GetEnemies() map[uuid.UUID]*Enemy {
 }
 
 func (em *EnemyManager) GetEnemyCount() int {
-	return len(em.enemies.activePool)
+	return em.enemies.GetActiveCount()
+}
+
+func (em *EnemyManager) handleSpawnEnemyEvent(e events.Event) {
+	if data, ok := e.Data.(events_data.SpawnEnemyEventData); ok {
+		em.SpawnNewEnemies(data.Level)
+	}
 }
 
 func CreateEnemyManager() *EnemyManager {
@@ -106,6 +129,8 @@ func CreateEnemyManager() *EnemyManager {
 		},
 		active: true,
 	}
+
+	events.GetEventManagerInstance().Subscribe(events_data.SpawnEnemyEvent, em.handleSpawnEnemyEvent)
 
 	return em
 }

@@ -21,7 +21,7 @@ func (p *PlayingScreen) Update(state map[string]any) {
 func (p *PlayingScreen) Draw() {
 
 	rl.DrawText(
-		fmt.Sprintf("%10v%03d", "Health: ", p.getStateValue("health")),
+		fmt.Sprintf("%10v%03.0f", "Health: ", p.getStateValue("health")),
 		int32(rl.GetScreenWidth()-200),
 		0,
 		20,

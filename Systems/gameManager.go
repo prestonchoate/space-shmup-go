@@ -62,12 +62,6 @@ func (gm *GameManager) Update() {
 		entity.Update(dt)
 	}
 
-	// TODO: Handle this in EnemyManager and emit an event when all enemies are cleared
-	if gm.EnemyManager.GetEnemyCount() == 0 {
-		gm.level++
-		gm.EnemyManager.SpawnNewEnemies(gm.level)
-	}
-
 	if gm.state == systems_data.Playing {
 		gm.collisionSystem.Update()
 	}
@@ -83,7 +77,7 @@ func (gm *GameManager) Update() {
 
 func (gm *GameManager) Draw() {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.White)
+	rl.ClearBackground(rl.Black)
 	for _, entity := range gm.entities {
 		entity.Draw()
 	}
@@ -94,14 +88,6 @@ func (gm *GameManager) Draw() {
 
 func (gm *GameManager) handleButtonInputs() {
 	if rl.IsKeyDown(rl.KeyLeftShift) && rl.IsKeyPressed(rl.KeyF7) {
-		/*
-			u := GetUpgrader().GetUpgrade()
-			events.GetEventManagerInstance().Emit(events_data.AddMessage, events_data.AddMessageData{
-				Message: u.String(),
-				Timer:   4.0,
-				Color:   u.Tier.Color,
-			})
-		*/
 		gm.state = systems_data.Shop
 	}
 
@@ -141,35 +127,10 @@ func (gm *GameManager) GameSetup() {
 	gm.entities = append(gm.entities, gm.Player)
 	gm.entities = append(gm.entities, gm.EnemyManager)
 
-	gm.level = 0
+	gm.level = 1
+	gm.EnemyManager.SpawnNewEnemies(gm.level)
 	gm.state = systems_data.Playing
 }
-
-/*
-func (gm *GameManager) loadAssets() {
-	// TODO: allow all entities to grab their own textures from the AssetManager so that there is a single place to manage that entity's data
-	am := assets.GetAssetManagerInstance()
-
-	pt, ok := am.GetTexture("assets/sprites/player/1B.png")
-	if !ok {
-		log.Fatal("Player texture not available in asset manager")
-	}
-
-	projTex, ok := am.GetTexture("assets/sprites/projectile/rocket.png")
-	if !ok {
-		log.Fatal("Projectile texture not available in asset manager")
-	}
-
-	et, ok := am.GetTexture("assets/sprites/enemies/Emissary.png")
-	if !ok {
-		log.Fatal("Enemy texture not available in asset manager")
-	}
-
-
-	rl.SetTextureWrap(BackgroundTexture, rl.WrapRepeat)
-	rl.SetTextureWrap(ProjectileTexture, rl.WrapRepeat)
-}
-*/
 
 func createGameManager() *GameManager {
 	gm := &GameManager{
@@ -208,6 +169,8 @@ func createGameManager() *GameManager {
 	events.GetEventManagerInstance().Subscribe(events_data.GameSettingsUpdated, gm.handleUpdatedSettings)
 	events.GetEventManagerInstance().Subscribe(events_data.ReturnGameState, gm.handleReturnStateEvent)
 	events.GetEventManagerInstance().Subscribe(events_data.SubmitHighScore, gm.leaderboardClient.HandleHighScoreSubmission)
+	events.GetEventManagerInstance().Subscribe(events_data.WaveCompleteEvent, gm.handleWaveCompleteEvent)
+
 	return gm
 }
 
@@ -251,5 +214,14 @@ func (gm *GameManager) handleUpdatedSettings(e events.Event) {
 		}
 
 		rl.SetSoundVolume(*gm.backgroundMusic, data.NewSettings.MusicVolume)
+	}
+}
+
+func (gm *GameManager) handleWaveCompleteEvent(e events.Event) {
+	if _, ok := e.Data.(events_data.WaveCompleteData); ok {
+		gm.level++
+		events.GetEventManagerInstance().Emit(events_data.LevelUpEvent, events_data.LevelIncreaseData{
+			Level: gm.level,
+		})
 	}
 }

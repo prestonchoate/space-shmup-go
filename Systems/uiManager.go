@@ -1,6 +1,7 @@
 package systems
 
 import (
+	"fmt"
 	"log"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -14,8 +15,10 @@ import (
 
 // TODO: possibility for concurrent read and write to messages map. Might need to add a mutex handler
 type UIManager struct {
-	screenList map[systems_data.GameState]ui.Screens
-	messages   []*events_data.AddMessageData
+	screenList         map[systems_data.GameState]ui.Screens
+	messages           []*events_data.AddMessageData
+	showWaveComplete   bool
+	waveCompleteTicker float32
 }
 
 type UIUpdate struct {
@@ -61,6 +64,7 @@ func CreateUIManager() *UIManager {
 	u.screenList = screens
 	events.GetEventManagerInstance().Subscribe(events_data.AddMessage, u.handleAddMessageEvent)
 	events.GetEventManagerInstance().Subscribe(events_data.SubmitHighScore, u.handleScoreSubmissionEvent)
+	events.GetEventManagerInstance().Subscribe(events_data.WaveCompleteEvent, u.handleWaveCompleteEvent)
 	return u
 }
 
@@ -88,6 +92,30 @@ func (u *UIManager) HandleGameStateRender(state systems_data.GameState) {
 			msgY -= padding
 		}
 	}
+
+	if u.showWaveComplete && state == systems_data.Playing {
+		u.drawWaveCompleteText()
+	}
+}
+
+func (u *UIManager) drawWaveCompleteText() {
+	var w, h int
+	if rl.IsWindowFullscreen() {
+		w = rl.GetMonitorWidth(rl.GetCurrentMonitor())
+		h = rl.GetMonitorHeight(rl.GetCurrentMonitor())
+	} else {
+		w = rl.GetScreenWidth()
+		h = rl.GetScreenHeight()
+	}
+
+	text := "WAVE COMPLETE"
+	fontSize := int32(60)
+	textWidth := rl.MeasureText(text, fontSize)
+	x := w/2 - int(textWidth)
+	y := h / 2
+
+	rl.DrawText(text, int32(x), int32(y), fontSize, rl.NewColor(81, 191, 211, 255))
+	rl.DrawText(fmt.Sprintf("%.02f", u.waveCompleteTicker), int32(x), int32(y)+10, 20, rl.White)
 }
 
 func (u *UIManager) Update(update UIUpdate) {
@@ -128,6 +156,14 @@ func (u *UIManager) Update(update UIUpdate) {
 	}
 
 	u.cleanupMessageQueue()
+
+	if u.showWaveComplete && update.state == systems_data.Playing {
+		u.waveCompleteTicker -= update.delta
+		if u.waveCompleteTicker <= 0 {
+			u.showWaveComplete = false
+			u.changeGameState(systems_data.Shop)
+		}
+	}
 }
 
 // Helper function to update message timers
@@ -248,8 +284,6 @@ func (u *UIManager) handleSettingsScreen(screen ui.Screens, screenState map[stri
 
 // Handle shop screen state
 func (u *UIManager) handleShopScreen(screen ui.Screens, screenState map[string]any) {
-	// TODO: check if upgrades need to be spawned
-
 	spawned, exists := screenState["spawnedUpgrades"].(bool)
 	if !exists || !spawned {
 		// TODO: get number of upgrades from somewhere?
@@ -275,6 +309,14 @@ func (u *UIManager) handleShopScreen(screen ui.Screens, screenState map[string]a
 		u.playConfirmSound()
 		screenState["selectedUpgrade"] = nil
 		screenState["spawnedUpgrades"] = false
+		screen.Update(screenState)
+		u.changeGameState(systems_data.Playing)
+	}
+
+	skip, exists := screenState["skipButtonPressed"].(bool)
+	if exists && skip {
+		u.playConfirmSound()
+		screenState["skipButtonPressed"] = false
 		screen.Update(screenState)
 		u.changeGameState(systems_data.Playing)
 	}
@@ -324,5 +366,12 @@ func (u *UIManager) handleScoreSubmissionEvent(event events.Event) {
 			s.Update(state)
 		}
 
+	}
+}
+
+func (u *UIManager) handleWaveCompleteEvent(e events.Event) {
+	if _, ok := e.Data.(events_data.WaveCompleteData); ok {
+		u.waveCompleteTicker = 2.0
+		u.showWaveComplete = true
 	}
 }

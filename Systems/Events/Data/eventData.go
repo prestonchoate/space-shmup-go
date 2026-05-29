@@ -33,3 +33,13 @@ type AddMessageData struct {
 type StatUpgradeData struct {
 	Upgrade *systems_data.StatUpgrade
 }
+
+type WaveCompleteData struct{}
+
+type LevelIncreaseData struct {
+	Level int
+}
+
+type SpawnEnemyEventData struct {
+	Level int
+}

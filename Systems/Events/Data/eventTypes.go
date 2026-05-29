@@ -10,4 +10,7 @@ const (
 	AddMessage              EventName = "addMessage"
 	ScoreSubmissionComplete EventName = "submissionComplete"
 	StatUpgradeEvent        EventName = "statUpgrade"
+	WaveCompleteEvent       EventName = "waveComplete"
+	LevelUpEvent            EventName = "levelIncrease"
+	SpawnEnemyEvent         EventName = "spawnEnemies"
 )
